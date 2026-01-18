@@ -32,6 +32,7 @@
     <string name="action_menu_edit_title">Edit Action Menu</string>
     <string name="action_menu_edit_hint">Reorder buttons and assign actions.</string>
     <string name="action_menu_edit_list_placeholder">No action menu items yet.</string>
+    <string name="action_menu_add_item">Add Item</string>
     <string name="disconnect">Disconnect</string>
     <string name="sonarpen_calibration_title">SonarPen Calibration</string>
     <string name="sonarpen_permission_needed">Microphone permission required for SonarPen.</string>

@@ -10,6 +10,7 @@ class SimplePacketWriter : PacketWriter {
             is Packet.Pen -> writePen(packet)
             is Packet.Keyboard -> writeKeyboard(packet)
             is Packet.Command -> writeCommand(packet)
+            is Packet.FrameDone -> writeFrameDone(packet)
             else -> ByteArray(0)
         }
     }
@@ -40,6 +41,13 @@ class SimplePacketWriter : PacketWriter {
         val buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
         buffer.put(ProtocolDataTypes.COMMAND.toByte())
         buffer.putInt(packet.commandId)
+        return buffer.array()
+    }
+
+    private fun writeFrameDone(packet: Packet.FrameDone): ByteArray {
+        val buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.put(ProtocolDataTypes.FRAME_DONE.toByte())
+        buffer.putInt(packet.encoderId)
         return buffer.array()
     }
 }

@@ -33,9 +33,16 @@
 - [x] Add TCP listener thread to accept connections
 - [x] Show TCP connection count in settings
 - [x] Add INTERNET permission for TCP transport
-- [ ] Add framed packet writer for outgoing packets
-- [ ] Write Keyboard/Command packets in SimplePacketWriter
-- [ ] Send keyboard packets from InputSenderStub
+- [x] Add framed packet writer for outgoing packets
+- [x] Write Keyboard/Command packets in SimplePacketWriter
+- [x] Send keyboard packets from InputSenderStub
+- [x] Add tests for framed packet writer
+- [x] Add stream chunk writer for outgoing TCP
+- [x] Wrap outgoing packets in stream chunks
+- [x] Add tests for stream chunk writer
+- [x] Split oversized payloads into multiple chunks
+- [x] Parse State/Error/FrameDone packets in SimplePacketReader
+- [x] Add tests for new packet parsing
 
 ## Next Focus
 - [x] Add TCP packet reader loop skeleton
@@ -151,3 +158,12 @@
 - [x] Add mirror screen info banner placeholder
 - [x] Add session start/stop buttons in MirrorActivity
 - [x] Add session state persistence on rotate
+- [x] Add FrameDone writer in SimplePacketWriter
+- [x] Add tests for FrameDone writer
+- [x] Add ActionMenuRepository serialization test
+- [x] Add add-item action in ActionMenuEditActivity
+- [x] Add handshake parser/helper
+- [x] Add handshake parser tests
+- [x] Add StreamChunkParser test for multiple packets
+- [x] Add StreamBuffer multiple packet test
+- [ ] Add handshake parsing in TcpPacketLoop

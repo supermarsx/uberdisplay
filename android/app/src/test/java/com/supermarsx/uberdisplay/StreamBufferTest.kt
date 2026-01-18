@@ -38,4 +38,23 @@ class StreamBufferTest {
         assertNull(stream.readPacket())
         assertEquals(0, stream.size())
     }
+
+    @Test
+    fun readsMultiplePacketsSequentially() {
+        val payloadA = byteArrayOf(1, 1)
+        val payloadB = byteArrayOf(2, 2, 2)
+        val buffer = ByteBuffer.allocate(4 + payloadA.size + 4 + payloadB.size)
+            .order(ByteOrder.LITTLE_ENDIAN)
+        buffer.putInt(payloadA.size)
+        buffer.put(payloadA)
+        buffer.putInt(payloadB.size)
+        buffer.put(payloadB)
+
+        val stream = StreamBuffer()
+        stream.append(buffer.array())
+        val first = stream.readPacket()
+        val second = stream.readPacket()
+        assertArrayEquals(payloadA, first)
+        assertArrayEquals(payloadB, second)
+    }
 }

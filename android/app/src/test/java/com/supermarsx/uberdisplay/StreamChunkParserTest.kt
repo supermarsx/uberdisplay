@@ -21,4 +21,19 @@ class StreamChunkParserTest {
 
         StreamChunkParser().appendChunk(0, framed.array())
     }
+
+    @Test
+    fun acceptsMultiplePacketsInOneChunk() {
+        val packetA = byteArrayOf(ProtocolDataTypes.STATE.toByte(), 1)
+        val packetB = byteArrayOf(ProtocolDataTypes.ERROR.toByte(), 2)
+
+        val framed = ByteBuffer.allocate(4 + packetA.size + 4 + packetB.size)
+            .order(ByteOrder.LITTLE_ENDIAN)
+        framed.putInt(packetA.size)
+        framed.put(packetA)
+        framed.putInt(packetB.size)
+        framed.put(packetB)
+
+        StreamChunkParser().appendChunk(1, framed.array())
+    }
 }

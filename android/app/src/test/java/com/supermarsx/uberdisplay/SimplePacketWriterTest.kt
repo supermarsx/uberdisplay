@@ -41,4 +41,11 @@ class SimplePacketWriterTest {
         assertEquals(5, bytes.size)
         assertEquals(ProtocolDataTypes.COMMAND.toByte(), bytes[0])
     }
+
+    @Test
+    fun writesFrameDonePacket() {
+        val bytes = SimplePacketWriter().write(Packet.FrameDone(encoderId = 11))
+        assertEquals(5, bytes.size)
+        assertEquals(ProtocolDataTypes.FRAME_DONE.toByte(), bytes[0])
+    }
 }
