@@ -240,6 +240,36 @@ Non-functional requirements:
 
 ## 6) Android App Architecture (Reference Implementation)
 
+## 6.0) Android App Architecture (Target) — Kotlin UI + Rust Core
+
+UberDisplay’s Android app should be as close to native as possible, using **Kotlin** for UI/platform glue and **Rust** for performance-critical logic.
+
+### Rust-owned components (Android)
+The following must live in Rust (shared with the PC app wherever possible):
+- `protocol`: packet encode/decode, framing, session IDs, capability negotiation.
+- `transport`: socket/USB I/O loops, buffering, backpressure, packet pacing.
+- `security`: key exchange, AEAD encryption/decryption, replay protection, key rotation.
+- `net-adaptation`: congestion signals, bandwidth estimation, adaptive bitrate/FPS/resolution decisions.
+- `media-pipeline-control`: jitter buffer, depacketization, frame reordering, timing, stats.
+- `compression`: non-video compression (e.g., LZ4/Zstd) and optional FEC primitives.
+- `config`: config schema, migration, import/export, validation.
+- `telemetry`: counters and performance metrics used by the UI (without heavy allocations on hot paths).
+
+### Kotlin-owned components (Android)
+- UI (Compose or Views), settings screens, onboarding, and accessibility.
+- Android permission flows and OS integrations (camera for QR pairing, microphone permission for SonarPen, etc.).
+- Video decode/render integration using platform-native APIs:
+  - Prefer **MediaCodec** (and SurfaceView/TextureView) for video decode.
+  - Rust provides the byte stream + timing; Kotlin/NDK bridges feed MediaCodec and drive presentation.
+- Input capture from Android framework (MotionEvent/KeyEvent) and forwarding into Rust for packing/encryption/transmission.
+- SonarPen SDK integration (Java/Kotlin), with pressure values forwarded into Rust for normalization/filtering and packetization.
+
+### FFI boundary
+- Use a stable Rust<->Kotlin bridge (JNI + a thin C ABI layer or UniFFI-style generated bindings).
+- Minimize crossings on hot paths:
+  - batch frame payloads and stats updates,
+  - keep per-packet processing in Rust.
+
 ### Core components
 - `com.kelocube.mirrorclient.App`
   - owns singletons: `TransportListener`, `Diagnostics`.
@@ -544,6 +574,7 @@ This repository should be split so Android and PC are cleanly separated, with sh
   - `driver/windows/` (virtual display driver project; may be a submodule or fork)
 - `shared/`
   - `shared/protocol/` (Rust crate for the wire protocol + test vectors)
+  - `shared/core/` (Rust crates for transport, security, adaptation, stats; used by PC + Android)
   - `shared/spec/` (spec docs, diagrams, binary fixtures)
 
 If the Android app is not Rust-based, share protocol correctness via fixtures (golden packets, capture logs) and keep the Rust `shared/protocol` crate as the source of truth for the PC app.
