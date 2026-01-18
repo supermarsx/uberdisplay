@@ -19,6 +19,7 @@ import androidx.preference.PreferenceManager
 import android.widget.LinearLayout
 import com.supermarsx.uberdisplay.actionmenu.ActionMenuRepository
 import com.supermarsx.uberdisplay.actionmenu.ActionMenuSender
+import com.supermarsx.uberdisplay.transport.TransportStatus
 
 class MirrorActivity : AppCompatActivity() {
     private val inputSender = InputSenderStub()
@@ -79,6 +80,7 @@ class MirrorActivity : AppCompatActivity() {
         super.onStart()
         AppServices.connectionController.markConnected()
         bindSessionStatus()
+        updateTcpStatus()
     }
 
     override fun onStop() {
@@ -89,6 +91,7 @@ class MirrorActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         renderActionMenu()
+        updateTcpStatus()
     }
 
     private fun bindSessionStatus() {
@@ -123,6 +126,15 @@ class MirrorActivity : AppCompatActivity() {
         }
     }
 
+    private fun updateTcpStatus() {
+        val tcpView = findViewById<android.widget.TextView>(R.id.tcpStatus)
+        tcpView.text = getString(
+            R.string.tcp_status_summary,
+            TransportStatus.tcpConnections,
+            TransportStatus.tcpState.name
+        )
+    }
+
     private fun renderActionMenu() {
         val container = findViewById<LinearLayout>(R.id.actionMenuContainer)
         container.removeAllViews()
@@ -133,6 +145,11 @@ class MirrorActivity : AppCompatActivity() {
             button.text = item.title
             button.setOnClickListener {
                 actionMenuSender.sendTap(item)
+            }
+            button.setOnLongClickListener {
+                actionMenuSender.sendConfig(item)
+                Toast.makeText(this, getString(R.string.action_menu_config_sent, item.title), Toast.LENGTH_SHORT).show()
+                true
             }
             container.addView(button)
         }

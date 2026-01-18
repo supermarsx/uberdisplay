@@ -11,14 +11,18 @@ import android.widget.Toast
 import com.supermarsx.uberdisplay.actionmenu.ActionMenuSender
 
 class ActionMenuActivity : AppCompatActivity() {
+    private lateinit var repo: ActionMenuRepository
+    private lateinit var sender: ActionMenuSender
+    private lateinit var countView: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_action_menu)
 
-        val repo = ActionMenuRepository(this)
-        val sender = ActionMenuSender()
-        val countView = findViewById<TextView>(R.id.actionMenuCount)
-        countView.text = getString(R.string.action_menu_items_count, repo.getItems().size)
+        repo = ActionMenuRepository(this)
+        sender = ActionMenuSender()
+        countView = findViewById(R.id.actionMenuCount)
+        updateCount()
 
         val editButton = findViewById<Button>(R.id.actionMenuEdit)
         editButton.setOnClickListener {
@@ -46,5 +50,14 @@ class ActionMenuActivity : AppCompatActivity() {
             sender.sendConfig(first)
             Toast.makeText(this, getString(R.string.action_menu_config_sent, first.title), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateCount()
+    }
+
+    private fun updateCount() {
+        countView.text = getString(R.string.action_menu_items_count, repo.getItems().size)
     }
 }

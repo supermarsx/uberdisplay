@@ -190,5 +190,7 @@
 - [ ] Add Windows driver probe stub + UI status surface
 - [x] Add action menu quick buttons in MirrorActivity
 - [x] Limit action menu buttons to 10 (spec)
-- [ ] Refresh ActionMenuActivity count on resume
-- [ ] Add long-press action menu button to send config
+- [x] Refresh ActionMenuActivity count on resume
+- [x] Add long-press action menu button to send config
+- [x] Add long-press config toast in MirrorActivity
+- [ ] Add TCP status label to MirrorActivity

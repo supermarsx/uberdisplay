@@ -46,6 +46,16 @@
         android:layout_margin="16dp" />
 
     <TextView
+        android:id="@+id/tcpStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/tcp_status_placeholder"
+        app:layout_constraintTop_toBottomOf="@id/sessionStatus"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="16dp" />
+
+    <TextView
         android:id="@+id/mirrorInfoBanner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
