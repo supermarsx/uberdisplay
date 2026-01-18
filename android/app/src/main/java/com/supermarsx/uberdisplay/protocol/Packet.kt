@@ -9,5 +9,7 @@ sealed class Packet {
     data class Pen(val pressure: Int) : Packet()
     data class Keyboard(val keyCode: Int, val down: Boolean) : Packet()
     data class Command(val commandId: Int) : Packet()
+    data class InputKey(val down: Boolean, val buttonIndex: Int, val actionId: Int) : Packet()
+    data class InputConfig(val buttonFunction: Int) : Packet()
     data class Error(val code: Int) : Packet()
 }

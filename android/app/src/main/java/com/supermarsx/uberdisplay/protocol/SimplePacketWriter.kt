@@ -11,6 +11,8 @@ class SimplePacketWriter : PacketWriter {
             is Packet.Keyboard -> writeKeyboard(packet)
             is Packet.Command -> writeCommand(packet)
             is Packet.FrameDone -> writeFrameDone(packet)
+            is Packet.InputKey -> writeInputKey(packet)
+            is Packet.InputConfig -> writeInputConfig(packet)
             else -> ByteArray(0)
         }
     }
@@ -48,6 +50,22 @@ class SimplePacketWriter : PacketWriter {
         val buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
         buffer.put(ProtocolDataTypes.FRAME_DONE.toByte())
         buffer.putInt(packet.encoderId)
+        return buffer.array()
+    }
+
+    private fun writeInputKey(packet: Packet.InputKey): ByteArray {
+        val buffer = ByteBuffer.allocate(7).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.put(ProtocolDataTypes.INPUT_KEY.toByte())
+        buffer.put(if (packet.down) 1 else 0)
+        buffer.put(packet.buttonIndex.toByte())
+        buffer.putInt(packet.actionId)
+        return buffer.array()
+    }
+
+    private fun writeInputConfig(packet: Packet.InputConfig): ByteArray {
+        val buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.put(ProtocolDataTypes.INPUT_CONFIG.toByte())
+        buffer.putInt(packet.buttonFunction)
         return buffer.array()
     }
 }

@@ -48,4 +48,18 @@ class SimplePacketWriterTest {
         assertEquals(5, bytes.size)
         assertEquals(ProtocolDataTypes.FRAME_DONE.toByte(), bytes[0])
     }
+
+    @Test
+    fun writesInputKeyPacket() {
+        val bytes = SimplePacketWriter().write(Packet.InputKey(down = true, buttonIndex = 2, actionId = 77))
+        assertEquals(7, bytes.size)
+        assertEquals(ProtocolDataTypes.INPUT_KEY.toByte(), bytes[0])
+    }
+
+    @Test
+    fun writesInputConfigPacket() {
+        val bytes = SimplePacketWriter().write(Packet.InputConfig(buttonFunction = 123))
+        assertEquals(5, bytes.size)
+        assertEquals(ProtocolDataTypes.INPUT_CONFIG.toByte(), bytes[0])
+    }
 }

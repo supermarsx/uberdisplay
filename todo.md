@@ -167,3 +167,6 @@
 - [x] Add StreamChunkParser test for multiple packets
 - [x] Add StreamBuffer multiple packet test
 - [x] Add handshake parsing in TcpPacketLoop
+- [x] Add InputKey/InputConfig packet models and writers
+- [x] Add tests for InputKey/InputConfig writer
+- [ ] Send action menu item as InputKey packet
