@@ -195,4 +195,5 @@
 - [x] Add long-press config toast in MirrorActivity
 - [x] Add TCP status label to MirrorActivity
 - [x] Show TCP outbox size in settings
-- [ ] Show TCP packet counters in settings
+- [x] Show TCP packet counters in settings
+- [ ] Add transport counter reset action in settings

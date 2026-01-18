@@ -13,6 +13,7 @@ class StreamChunkParser {
             val packetBytes = buffer.readPacket() ?: break
             val packet = reader.read(packetBytes)
             if (packet != null) {
+                com.supermarsx.uberdisplay.transport.TransportStatus.tcpPacketsIn += 1
                 Diagnostics.logInfo("stream_packet stream=$streamId type=${packet::class.simpleName}")
             }
         }

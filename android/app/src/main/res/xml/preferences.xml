@@ -77,6 +77,11 @@
             android:summary="@string/tcp_outbox_summary" />
 
         <Preference
+            android:key="tcp_packets"
+            android:title="@string/tcp_packets_title"
+            android:summary="@string/tcp_packets_summary" />
+
+        <Preference
             android:key="aoap_status"
             android:title="@string/aoap_status_title"
             android:summary="@string/aoap_status_summary" />

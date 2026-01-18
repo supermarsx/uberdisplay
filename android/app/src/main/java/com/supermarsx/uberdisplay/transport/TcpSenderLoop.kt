@@ -19,6 +19,7 @@ class TcpSenderLoop(private val queue: TcpSenderQueue) {
                 for (item in items) {
                     try {
                         val chunks = chunkWriter.wrapChunks(0, item)
+                        TransportStatus.tcpPacketsOut += 1
                         for (chunk in chunks) {
                             output.write(chunk)
                         }
