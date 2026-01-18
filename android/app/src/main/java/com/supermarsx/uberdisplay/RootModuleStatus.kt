@@ -15,6 +15,8 @@ object RootModuleStatus {
         HANDSHAKE_OK
     }
 
+    data class Handshake(val ok: Boolean, val caps: Long)
+
     fun checkStatus(): Status {
         if (!File(ROOT_SOCKET_PATH).exists()) {
             return Status.NOT_DETECTED
@@ -35,7 +37,8 @@ object RootModuleStatus {
             val pong = input.readLine() ?: ""
             socket.close()
 
-            if (hello.startsWith("OK") && pong.startsWith("PONG")) {
+            val handshake = parseHandshake(hello, pong)
+            if (handshake.ok) {
                 Status.HANDSHAKE_OK
             } else {
                 Status.UNREACHABLE
@@ -43,5 +46,16 @@ object RootModuleStatus {
         } catch (_: Exception) {
             Status.UNREACHABLE
         }
+    }
+
+    fun parseHandshake(helloLine: String, pongLine: String): Handshake {
+        if (!helloLine.startsWith("OK") || !pongLine.startsWith("PONG")) {
+            return Handshake(false, 0)
+        }
+
+        val capsToken = helloLine.split(" ").firstOrNull { it.startsWith("caps=") }
+        val capsValue = capsToken?.substringAfter("caps=")?.removePrefix("0x")
+        val caps = capsValue?.toLongOrNull(16) ?: 0
+        return Handshake(true, caps)
     }
 }
