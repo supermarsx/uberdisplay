@@ -13,7 +13,7 @@ class ActionMenuActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_action_menu)
 
-        val repo = ActionMenuRepository()
+        val repo = ActionMenuRepository(this)
         val countView = findViewById<TextView>(R.id.actionMenuCount)
         countView.text = getString(R.string.action_menu_items_count, repo.getItems().size)
 

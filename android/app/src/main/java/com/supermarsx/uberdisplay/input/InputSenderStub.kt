@@ -2,14 +2,29 @@ package com.supermarsx.uberdisplay.input
 
 import android.util.Log
 import android.view.MotionEvent
+import com.supermarsx.uberdisplay.protocol.Packet
+import com.supermarsx.uberdisplay.protocol.SimplePacketWriter
 
 class InputSenderStub : InputSender {
+    private val writer = SimplePacketWriter()
+
     override fun sendTouch(event: MotionEvent) {
-        Log.d("InputSenderStub", "touch action=${event.actionMasked} pointers=${event.pointerCount}")
+        val packet = Packet.Touch(points = event.pointerCount)
+        val bytes = writer.write(packet)
+        Log.d(
+            "InputSenderStub",
+            "touch action=${event.actionMasked} pointers=${event.pointerCount} bytes=${bytes.size}"
+        )
     }
 
     override fun sendPen(event: MotionEvent) {
-        Log.d("InputSenderStub", "pen action=${event.actionMasked}")
+        val pressure = (event.pressure * 1024).toInt()
+        val packet = Packet.Pen(pressure = pressure)
+        val bytes = writer.write(packet)
+        Log.d(
+            "InputSenderStub",
+            "pen action=${event.actionMasked} pressure=$pressure bytes=${bytes.size}"
+        )
     }
 
     override fun sendKey(keyCode: Int, down: Boolean) {

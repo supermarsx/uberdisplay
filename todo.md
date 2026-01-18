@@ -16,7 +16,35 @@
 - [x] Add session manager stub and wire into connection controller
 - [x] Add Action Menu activity placeholder
 - [x] Add action menu model/config stubs
-- [ ] Add action menu edit screen stub
+- [x] Add action menu edit screen stub
+- [x] Add action menu persistence (prefs/json)
+- [x] Add action menu edit list stub
+- [x] Add basic transport connect/disconnect state in MirrorActivity
+- [x] Add session status display in MirrorActivity
+- [x] Add connection button state handling for WAITING
+- [x] Add status chip color legend in settings
+- [x] Add connection mode selector (TCP/AOAP) in settings
+- [x] Add simple connection mode indicator in main screen
+- [x] Add preference change listener to refresh mode label
+- [x] Add basic transport status in settings (TCP port, AOAP)
+- [x] Add TCP listener stub to update AOAP/TCP status
+- [x] Add TCP status summary from TransportStatus
+- [x] Refresh transport status when settings screen opens
+- [x] Add TCP listener thread to accept connections
+- [x] Show TCP connection count in settings
+- [x] Add INTERNET permission for TCP transport
+
+## Next Focus
+- [x] Add TCP packet reader loop skeleton
+- [x] Add protocol framing parser for stream chunks
+- [x] Add basic AOAP listener status signaling
+- [x] Implement StreamBuffer.readPacket framing
+- [x] Parse stream_id + chunk_len framing in TcpPacketLoop
+- [x] Add basic heartbeat/keepalive placeholder
+- [x] Add TCP connection timeout handling
+- [x] Add StreamChunkParser tests
+- [ ] Add TCP outgoing packet queue stub
+- [ ] Add AOAP attach broadcast receiver stub
 
 ## Android Bootstrap (Kotlin)
 - [x] Create `android/` project root and Gradle settings
@@ -96,3 +124,18 @@
 - [x] Update `README.md` with Android build/run instructions
 - [x] Document root module IPC in `spec.md` or a linked appendix
 - [x] Add a brief Android folder overview to `readme.md`
+- [x] Add protocol packet data models
+- [x] Add packet reader/writer stubs
+- [x] Add protocol framing helper stubs
+- [x] Add packet parsing skeleton for Configure/Frame
+- [x] Add packet writer skeleton for Touch/Pen
+- [x] Add protocol tests for SimplePacketReader/Writer
+- [x] Add transport/packet wiring in InputSenderStub
+- [x] Add connection controller tests
+- [x] Add protocol writer tests for zero packets
+- [x] Add basic transport status refresh on connection start/stop
+- [x] Add TCP port constant in settings summary from ProtocolConstants
+- [x] Add settings hint for connection mode usage
+- [x] Add mirror screen info banner placeholder
+- [x] Add session start/stop buttons in MirrorActivity
+- [x] Add session state persistence on rotate

@@ -1,0 +1,10 @@
+<resources>
+    <string-array name="connection_mode_entries">
+        <item>TCP (Wi-Fi)</item>
+        <item>AOAP (USB)</item>
+    </string-array>
+    <string-array name="connection_mode_values">
+        <item>tcp</item>
+        <item>aoap</item>
+    </string-array>
+</resources>

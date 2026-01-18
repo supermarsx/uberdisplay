@@ -21,8 +21,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusChip: Chip
     private lateinit var settingsButton: Button
     private lateinit var connectButton: Button
+    private lateinit var connectionMode: TextView
     private val connectionController = AppServices.connectionController
     private var lastState: ConnectionState = ConnectionState.IDLE
+    private lateinit var prefs: android.content.SharedPreferences
+    private val prefListener =
+        android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "connection_mode") {
+                updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,8 +41,9 @@ class MainActivity : AppCompatActivity() {
         statusChip = findViewById(R.id.statusChip)
         settingsButton = findViewById(R.id.settingsButton)
         connectButton = findViewById(R.id.connectButton)
+        connectionMode = findViewById(R.id.connectionMode)
         AppServices.init(this)
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
         rootToggle.isChecked = prefs.getBoolean("use_root_module", false)
         updateRootStatus()
@@ -45,19 +54,37 @@ class MainActivity : AppCompatActivity() {
             updateRootStatus()
         }
 
+        updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
+
         settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         connectButton.setOnClickListener {
             if (lastState == ConnectionState.IDLE || lastState == ConnectionState.ERROR) {
-                connectionController.startTcp()
+                val mode = prefs.getString("connection_mode", "tcp") ?: "tcp"
+                updateConnectionModeLabel(mode)
+                when (mode) {
+                    "aoap" -> connectionController.startAoap()
+                    else -> connectionController.startTcp()
+                }
                 connectionController.markConnected()
                 startActivity(Intent(this, MirrorActivity::class.java))
             } else {
                 connectionController.stop()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        prefs.registerOnSharedPreferenceChangeListener(prefListener)
+        updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
     }
 
     private fun bindConnectionState() {
@@ -114,12 +141,21 @@ class MainActivity : AppCompatActivity() {
 
         lastState = state
         connectButton.setText(
-            if (state == ConnectionState.CONNECTED || state == ConnectionState.WAITING) {
-                R.string.disconnect
-            } else {
-                R.string.connect
+            when (state) {
+                ConnectionState.CONNECTED -> R.string.disconnect
+                ConnectionState.WAITING -> R.string.cancel
+                else -> R.string.connect
             }
         )
+    }
+
+    private fun updateConnectionModeLabel(mode: String) {
+        val textRes = if (mode == "aoap") {
+            R.string.connection_mode_label_aoap
+        } else {
+            R.string.connection_mode_label_tcp
+        }
+        connectionMode.setText(textRes)
     }
 }
 }

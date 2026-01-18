@@ -30,6 +30,7 @@ class ConnectionController(
         transportManager.stop()
         listener.stop()
         sessionManager.stop()
+        Diagnostics.logInfo("transport_status tcp=${com.supermarsx.uberdisplay.transport.TransportStatus.tcpState} aoap=${com.supermarsx.uberdisplay.transport.TransportStatus.aoapState}")
         transition(ConnectionState.IDLE)
     }
 
@@ -46,6 +47,7 @@ class ConnectionController(
         transportManager.setMode(mode)
         listener.start()
         transportManager.start()
+        Diagnostics.logInfo("transport_status tcp=${com.supermarsx.uberdisplay.transport.TransportStatus.tcpState} aoap=${com.supermarsx.uberdisplay.transport.TransportStatus.aoapState}")
         transition(ConnectionState.WAITING)
     }
 

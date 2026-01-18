@@ -40,4 +40,42 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:title="@string/settings_category_status">
+
+        <Preference
+            android:key="status_color_legend"
+            android:title="@string/status_color_legend_title"
+            android:summary="@string/status_color_legend_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/settings_category_connection">
+
+        <ListPreference
+            android:key="connection_mode"
+            android:title="@string/connection_mode_title"
+            android:entries="@array/connection_mode_entries"
+            android:entryValues="@array/connection_mode_values"
+            android:defaultValue="tcp"
+            android:summary="%s" />
+
+        <Preference
+            android:key="connection_mode_hint"
+            android:title="@string/connection_mode_hint_title"
+            android:summary="@string/connection_mode_hint_summary" />
+
+        <Preference
+            android:key="tcp_port"
+            android:title="@string/tcp_port_title"
+            android:summary="@string/tcp_port_summary" />
+
+        <Preference
+            android:key="aoap_status"
+            android:title="@string/aoap_status_title"
+            android:summary="@string/aoap_status_summary" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

@@ -7,11 +7,15 @@ class TransportListener(
     fun start() {
         tcpListener.start()
         aoapListener.start()
+        TransportStatus.tcpState = TransportStatus.State.LISTENING
+        TransportStatus.aoapState = TransportStatus.State.WAITING
     }
 
     fun stop() {
         tcpListener.stop()
         aoapListener.stop()
+        TransportStatus.tcpState = TransportStatus.State.STOPPED
+        TransportStatus.aoapState = TransportStatus.State.STOPPED
     }
 
     fun isRunning(): Boolean {

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -36,6 +37,11 @@
             android:name=".ui.ActionMenuActivity"
             android:exported="false"
             android:label="@string/action_menu_title" />
+
+        <activity
+            android:name=".ui.ActionMenuEditActivity"
+            android:exported="false"
+            android:label="@string/action_menu_edit_title" />
 
     </application>
 

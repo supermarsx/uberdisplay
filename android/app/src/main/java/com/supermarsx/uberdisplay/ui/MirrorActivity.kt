@@ -11,13 +11,26 @@ import android.view.KeyEvent
 import android.widget.Button
 import android.widget.Toast
 import android.content.Intent
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+import androidx.preference.PreferenceManager
 
 class MirrorActivity : AppCompatActivity() {
     private val inputSender = InputSenderStub()
+    private var lastState: com.supermarsx.uberdisplay.ConnectionState =
+        com.supermarsx.uberdisplay.ConnectionState.IDLE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mirror)
+
+        savedInstanceState?.getString(KEY_LAST_STATE)?.let { name ->
+            lastState = runCatching {
+                com.supermarsx.uberdisplay.ConnectionState.valueOf(name)
+            }.getOrDefault(lastState)
+        }
 
         val root = findViewById<android.view.View>(R.id.mirrorRoot)
         root.isFocusableInTouchMode = true
@@ -31,16 +44,72 @@ class MirrorActivity : AppCompatActivity() {
             startActivity(Intent(this, ActionMenuActivity::class.java))
             Toast.makeText(this, R.string.action_menu_placeholder, Toast.LENGTH_SHORT).show()
         }
+
+        val disconnectButton = findViewById<Button>(R.id.disconnectButton)
+        disconnectButton.setOnClickListener {
+            AppServices.connectionController.stop()
+            finish()
+        }
+
+        val toggleButton = findViewById<Button>(R.id.sessionToggleButton)
+        toggleButton.setOnClickListener {
+            val controller = AppServices.connectionController
+            if (lastState == com.supermarsx.uberdisplay.ConnectionState.CONNECTED ||
+                lastState == com.supermarsx.uberdisplay.ConnectionState.WAITING
+            ) {
+                controller.stop()
+            } else {
+                val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+                when (prefs.getString("connection_mode", "tcp")) {
+                    "aoap" -> controller.startAoap()
+                    else -> controller.startTcp()
+                }
+                controller.markConnected()
+            }
+        }
     }
 
     override fun onStart() {
         super.onStart()
         AppServices.connectionController.markConnected()
+        bindSessionStatus()
     }
 
     override fun onStop() {
         super.onStop()
         AppServices.connectionController.stop()
+    }
+
+    private fun bindSessionStatus() {
+        val statusView = findViewById<android.widget.TextView>(R.id.sessionStatus)
+        val toggleButton = findViewById<Button>(R.id.sessionToggleButton)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                AppServices.connectionController.stateStore().state.collect { state ->
+                    val textRes = when (state) {
+                        com.supermarsx.uberdisplay.ConnectionState.IDLE ->
+                            R.string.session_status_idle
+                        com.supermarsx.uberdisplay.ConnectionState.WAITING ->
+                            R.string.session_status_waiting
+                        com.supermarsx.uberdisplay.ConnectionState.CONNECTED ->
+                            R.string.session_status_connected
+                        com.supermarsx.uberdisplay.ConnectionState.ERROR ->
+                            R.string.session_status_error
+                    }
+                    statusView.setText(textRes)
+                    lastState = state
+                    toggleButton.setText(
+                        if (state == com.supermarsx.uberdisplay.ConnectionState.CONNECTED ||
+                            state == com.supermarsx.uberdisplay.ConnectionState.WAITING
+                        ) {
+                            R.string.session_pause
+                        } else {
+                            R.string.session_resume
+                        }
+                    )
+                }
+            }
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -51,5 +120,14 @@ class MirrorActivity : AppCompatActivity() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         inputSender.sendKey(keyCode, false)
         return super.onKeyUp(keyCode, event)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(KEY_LAST_STATE, lastState.name)
+        super.onSaveInstanceState(outState)
+    }
+
+    companion object {
+        private const val KEY_LAST_STATE = "mirror_last_state"
     }
 }

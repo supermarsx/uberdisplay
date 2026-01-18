@@ -5,10 +5,12 @@ class AoapListenerStub {
 
     fun start() {
         running = true
+        TransportStatus.aoapState = TransportStatus.State.WAITING
     }
 
     fun stop() {
         running = false
+        TransportStatus.aoapState = TransportStatus.State.STOPPED
     }
 
     fun isRunning(): Boolean = running

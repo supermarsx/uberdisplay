@@ -10,18 +10,22 @@ import com.supermarsx.uberdisplay.Diagnostics
 import com.supermarsx.uberdisplay.sonarpen.SonarPenCalibrationActivity
 import com.supermarsx.uberdisplay.sonarpen.SonarPenStatus
 import android.content.Intent
+import com.supermarsx.uberdisplay.transport.TransportStatus
+import com.supermarsx.uberdisplay.protocol.ProtocolConstants
 
 class RootSettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         wireSonarPenPreferences()
         wireDiagnosticsPreferences()
+        updateTransportStatus()
     }
 
     override fun onResume() {
         super.onResume()
         updateRootStatus()
         updateSonarPenStatus()
+        updateTransportStatus()
     }
 
     private fun updateRootStatus() {
@@ -68,6 +72,27 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
         diagnosticsPref?.setOnPreferenceChangeListener { _, newValue ->
             Diagnostics.setEnabled(newValue as Boolean)
             true
+        }
+    }
+
+    private fun updateTransportStatus() {
+        val tcpPortPref = findPreference<Preference>("tcp_port")
+        val aoapPref = findPreference<Preference>("aoap_status")
+        val tcpStateLabel = when (TransportStatus.tcpState) {
+            TransportStatus.State.STOPPED -> getString(R.string.transport_state_stopped)
+            TransportStatus.State.LISTENING -> getString(R.string.transport_state_listening)
+            TransportStatus.State.WAITING -> getString(R.string.transport_state_waiting)
+        }
+        tcpPortPref?.summary = getString(
+            R.string.tcp_port_summary_with_state,
+            ProtocolConstants.DEFAULT_TCP_PORT,
+            tcpStateLabel,
+            TransportStatus.tcpConnections
+        )
+        aoapPref?.summary = when (TransportStatus.aoapState) {
+            TransportStatus.State.STOPPED -> getString(R.string.aoap_status_stopped)
+            TransportStatus.State.WAITING -> getString(R.string.aoap_status_waiting)
+            TransportStatus.State.LISTENING -> getString(R.string.aoap_status_listening)
         }
     }
 }
