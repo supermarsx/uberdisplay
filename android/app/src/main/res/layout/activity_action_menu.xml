@@ -56,4 +56,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="12dp" />
 
+    <Button
+        android:id="@+id/actionMenuSendConfig"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/action_menu_send_config"
+        app:layout_constraintTop_toBottomOf="@id/actionMenuSendSample"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

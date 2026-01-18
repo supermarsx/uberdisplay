@@ -19,11 +19,31 @@ class ActionMenuEditActivity : AppCompatActivity() {
         repo = ActionMenuRepository(this)
         listView = findViewById(R.id.actionMenuEditList)
         val addButton = findViewById<Button>(R.id.actionMenuAddItem)
+        val renameButton = findViewById<Button>(R.id.actionMenuRenameFirst)
+        val bumpButton = findViewById<Button>(R.id.actionMenuBumpActionId)
 
         addButton.setOnClickListener {
             val items = repo.getItems().toMutableList()
             val nextId = (items.maxOfOrNull { it.id } ?: 0) + 1
             items.add(ActionMenuItem(nextId, "Custom $nextId", 3000 + nextId))
+            repo.saveItems(items)
+            renderItems(items)
+        }
+
+        renameButton.setOnClickListener {
+            val items = repo.getItems().toMutableList()
+            if (items.isEmpty()) return@setOnClickListener
+            val first = items[0]
+            items[0] = first.copy(title = "${first.title}*")
+            repo.saveItems(items)
+            renderItems(items)
+        }
+
+        bumpButton.setOnClickListener {
+            val items = repo.getItems().toMutableList()
+            if (items.isEmpty()) return@setOnClickListener
+            val first = items[0]
+            items[0] = first.copy(actionId = first.actionId + 1)
             repo.saveItems(items)
             renderItems(items)
         }

@@ -1,0 +1,28 @@
+{
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devPath": "http://localhost:3000",
+    "distDir": "../app/out"
+  },
+  "package": {
+    "productName": "UberDisplay",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "windows": [
+      {
+        "title": "UberDisplay Host",
+        "width": 1240,
+        "height": 820,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' data: http://localhost:3000"
+    },
+    "bundle": {
+      "active": false
+    }
+  }
+}

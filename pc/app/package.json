@@ -1,0 +1,25 @@
+{
+  "name": "uberdisplay-pc-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.30",
+    "@types/react": "18.2.65",
+    "@types/react-dom": "18.2.22",
+    "typescript": "5.4.3",
+    "postcss": "8.4.38",
+    "autoprefixer": "10.4.19"
+  }
+}

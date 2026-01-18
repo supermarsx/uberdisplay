@@ -169,4 +169,22 @@
 - [x] Add handshake parsing in TcpPacketLoop
 - [x] Add InputKey/InputConfig packet models and writers
 - [x] Add tests for InputKey/InputConfig writer
-- [ ] Send action menu item as InputKey packet
+- [x] Send action menu item as InputKey packet
+- [x] Send InputKey down+up for action menu tap
+- [x] Send InputConfig for action menu button function
+- [x] Add action menu sender tests
+- [x] Add action menu item edit (rename/action id)
+- [x] Add action menu edit tests
+
+## PC App (Host)
+- [x] Create `pc/` scaffold with Tauri backend + Next.js app router
+- [x] Add initial UI shell styled to the spec (dark watercolor theme)
+- [x] Add Rust protocol helpers for handshake and stream chunk framing
+- [x] Add unit tests for host handshake and stream chunk framing
+- [ ] Wire Tauri `app_status` command into the UI status cards
+- [ ] Add transport status model (USB AOAP, TCP listen/connect) in Rust
+- [ ] Implement host->client packet builder for Configure/Frame/State
+- [ ] Add client->host packet parser for Touch/Pen/Keyboard/InputKey
+- [ ] Add host settings model (codec, bitrate, resolution, refresh cap)
+- [ ] Add device registry for paired Android devices
+- [ ] Add Windows driver probe stub + UI status surface

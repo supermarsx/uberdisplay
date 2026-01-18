@@ -33,6 +33,13 @@
     <string name="action_menu_edit_hint">Reorder buttons and assign actions.</string>
     <string name="action_menu_edit_list_placeholder">No action menu items yet.</string>
     <string name="action_menu_add_item">Add Item</string>
+    <string name="action_menu_send_sample">Send First Item</string>
+    <string name="action_menu_send_config">Send Button Config</string>
+    <string name="action_menu_empty">No action menu items to send.</string>
+    <string name="action_menu_sent">Sent: %1$s</string>
+    <string name="action_menu_config_sent">Config sent: %1$s</string>
+    <string name="action_menu_rename_first">Rename First Item</string>
+    <string name="action_menu_bump_action_id">Bump Action Id</string>
     <string name="disconnect">Disconnect</string>
     <string name="sonarpen_calibration_title">SonarPen Calibration</string>
     <string name="sonarpen_permission_needed">Microphone permission required for SonarPen.</string>

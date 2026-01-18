@@ -19,4 +19,18 @@ class ActionMenuRepositoryTest {
         assertEquals(1, loaded.size)
         assertEquals("Test", loaded[0].title)
     }
+
+    @Test
+    fun updatesFirstItem() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repo = ActionMenuRepository(context)
+        val items = listOf(ActionMenuItem(1, "Test", 123))
+        repo.saveItems(items)
+
+        val updated = listOf(ActionMenuItem(1, "Test*", 124))
+        repo.saveItems(updated)
+        val loaded = repo.getItems()
+        assertEquals("Test*", loaded[0].title)
+        assertEquals(124, loaded[0].actionId)
+    }
 }
