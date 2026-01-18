@@ -17,7 +17,7 @@ If you add tests, wire them into Gradle (for example, `gradle test` or `gradle c
 ## Coding Style & Naming Conventions
 - Language: Kotlin with Java 8 target compatibility configured in `android/app/build.gradle`.
 - Indentation: follow existing file style; default to 4 spaces for Kotlin/Gradle.
-- Android package namespace is `com.uberdisplay.app`; keep new classes under this package unless intentionally modularizing.
+- Android package namespace is `com.supermarsx.uberdisplay`; keep new classes under this package unless intentionally modularizing.
 - Avoid introducing new formatting tools unless they are applied consistently across the app.
 
 ## Testing Guidelines

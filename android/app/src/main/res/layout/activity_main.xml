@@ -37,4 +37,25 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp" />
 
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/rootToggle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/root_module_toggle"
+        app:layout_constraintTop_toBottomOf="@id/connectButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:id="@+id/rootStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/root_module_status_unknown"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        app:layout_constraintTop_toBottomOf="@id/rootToggle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

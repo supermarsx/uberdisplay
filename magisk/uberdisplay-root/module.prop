@@ -1,0 +1,6 @@
+id=uberdisplay-root
+name=UberDisplay Root Module
+version=0.1.0
+versionCode=1
+author=supermarsx
+description=Optional root companion for UberDisplay (IPC + advanced capabilities). Disabled by default.

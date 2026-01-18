@@ -21,6 +21,7 @@ includes the Android app (`android/`), SonarPen SDK samples
 Supported today (reference assets):
 - Android app project under `android/`.
 - SonarPen SDK and Android sample projects under `libs/sonarpen-sdk/`.
+- Magisk root module skeleton under `magisk/uberdisplay-root/`.
 - Protocol and product specification in `spec.md`.
 
 Targeted by the spec:

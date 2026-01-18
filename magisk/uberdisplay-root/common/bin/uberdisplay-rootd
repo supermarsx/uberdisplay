@@ -1,0 +1,19 @@
+#!/system/bin/sh
+# Stub root daemon entrypoint.
+
+SOCKET_PATH="/data/local/tmp/uberdisplay/root.sock"
+CAPS_HEX="0x00000000"
+
+case "$1" in
+  --health)
+    echo "OK 1 caps=${CAPS_HEX}"
+    exit 0
+    ;;
+  --socket)
+    SOCKET_PATH="$2"
+    ;;
+esac
+
+echo "uberdisplay-rootd stub started (socket: ${SOCKET_PATH})"
+echo "No socket server is implemented yet."
+exit 0

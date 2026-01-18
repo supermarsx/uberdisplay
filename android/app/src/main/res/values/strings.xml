@@ -2,5 +2,16 @@
     <string name="app_name">UberDisplay</string>
     <string name="status_title">Connection Status</string>
     <string name="status_idle">Idle</string>
+    <string name="status_waiting">Waiting for host</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_error">Error</string>
     <string name="connect">Connect</string>
+    <string name="root_module_toggle">Use root module (optional)</string>
+    <string name="root_module_status_unknown">Root module: unknown</string>
+    <string name="root_module_status_enabled">Root module: enabled</string>
+    <string name="root_module_status_disabled">Root module: disabled</string>
+    <string name="root_module_status_detected">Root module: detected</string>
+    <string name="root_module_status_not_detected">Root module: not detected</string>
+    <string name="root_module_status_checking">Root module: checking...</string>
+    <string name="root_module_status_unreachable">Root module: unreachable</string>
 </resources>
