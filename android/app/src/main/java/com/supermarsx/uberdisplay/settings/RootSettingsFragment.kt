@@ -83,16 +83,24 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
             TransportStatus.State.LISTENING -> getString(R.string.transport_state_listening)
             TransportStatus.State.WAITING -> getString(R.string.transport_state_waiting)
         }
+        val lastSeen = formatLastConnection(TransportStatus.lastTcpConnectionAt)
         tcpPortPref?.summary = getString(
             R.string.tcp_port_summary_with_state,
             ProtocolConstants.DEFAULT_TCP_PORT,
             tcpStateLabel,
-            TransportStatus.tcpConnections
+            TransportStatus.tcpConnections,
+            lastSeen
         )
         aoapPref?.summary = when (TransportStatus.aoapState) {
             TransportStatus.State.STOPPED -> getString(R.string.aoap_status_stopped)
             TransportStatus.State.WAITING -> getString(R.string.aoap_status_waiting)
             TransportStatus.State.LISTENING -> getString(R.string.aoap_status_listening)
         }
+    }
+
+    private fun formatLastConnection(timestamp: Long): String {
+        if (timestamp <= 0) return getString(R.string.tcp_last_connection_never)
+        val seconds = (System.currentTimeMillis() - timestamp) / 1000
+        return getString(R.string.tcp_last_connection_seconds, seconds)
     }
 }

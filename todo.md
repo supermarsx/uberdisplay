@@ -43,8 +43,17 @@
 - [x] Add basic heartbeat/keepalive placeholder
 - [x] Add TCP connection timeout handling
 - [x] Add StreamChunkParser tests
-- [ ] Add TCP outgoing packet queue stub
-- [ ] Add AOAP attach broadcast receiver stub
+- [x] Add TCP outgoing packet queue stub
+- [x] Add AOAP attach broadcast receiver stub
+- [x] Wire TcpSenderQueue into InputSenderStub
+- [x] Add AOAP status summary update on attach
+- [x] Add AOAP detach receiver stub
+- [x] Add last TCP connection time in settings summary
+- [x] Add shared TCP outbox queue
+- [x] Add TCP sender loop stub
+- [x] Add sender queue drain tests
+- [x] Add zero-length StreamBuffer test
+- [x] Add ConnectionController stop test
 
 ## Android Bootstrap (Kotlin)
 - [x] Create `android/` project root and Gradle settings

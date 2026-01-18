@@ -30,4 +30,12 @@ class StreamBufferTest {
         stream.append(byteArrayOf(1, 0))
         assertNull(stream.readPacket())
     }
+
+    @Test
+    fun dropsZeroLengthPacket() {
+        val stream = StreamBuffer()
+        stream.append(byteArrayOf(0, 0, 0, 0))
+        assertNull(stream.readPacket())
+        assertEquals(0, stream.size())
+    }
 }

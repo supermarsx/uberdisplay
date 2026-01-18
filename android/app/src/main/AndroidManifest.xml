@@ -43,6 +43,21 @@
             android:exported="false"
             android:label="@string/action_menu_edit_title" />
 
+        <receiver android:name=".transport.AoapAttachReceiver">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/aoap_accessory" />
+        </receiver>
+
+        <receiver android:name=".transport.AoapDetachReceiver">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_DETACHED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

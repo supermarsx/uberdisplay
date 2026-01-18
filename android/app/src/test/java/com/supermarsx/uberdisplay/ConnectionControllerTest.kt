@@ -20,4 +20,12 @@ class ConnectionControllerTest {
         assertEquals(ConnectionState.CONNECTED, controller.stateStore().state.value)
         controller.stop()
     }
+
+    @Test
+    fun stopMovesToIdle() {
+        val controller = ConnectionController()
+        controller.startTcp()
+        controller.stop()
+        assertEquals(ConnectionState.IDLE, controller.stateStore().state.value)
+    }
 }

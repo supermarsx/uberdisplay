@@ -51,10 +51,14 @@ class TcpListenerStub(
 
     private fun handleConnection(socket: Socket) {
         TransportStatus.tcpConnections += 1
+        TransportStatus.lastTcpConnectionAt = System.currentTimeMillis()
         try {
             TransportStatus.tcpState = TransportStatus.State.LISTENING
             socket.soTimeout = 5000
+            val senderLoop = TcpSenderLoop(TransportOutbox.tcpQueue)
+            senderLoop.start(socket.getOutputStream())
             TcpPacketLoop().run(socket.getInputStream())
+            senderLoop.stop()
             socket.close()
         } catch (_: Exception) {
         }

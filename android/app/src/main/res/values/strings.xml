@@ -55,7 +55,9 @@
     <string name="connection_mode_hint_summary">TCP is for Wi-Fi, AOAP is for USB accessory mode.</string>
     <string name="tcp_port_title">TCP port</string>
     <string name="tcp_port_summary">Port 1445</string>
-    <string name="tcp_port_summary_with_state">Port %1$d (%2$s, connections %3$d)</string>
+    <string name="tcp_port_summary_with_state">Port %1$d (%2$s, connections %3$d, %4$s)</string>
+    <string name="tcp_last_connection_never">last: never</string>
+    <string name="tcp_last_connection_seconds">last: %1$ds ago</string>
     <string name="aoap_status_title">AOAP status</string>
     <string name="aoap_status_summary">Waiting for USB accessory</string>
     <string name="aoap_status_waiting">Waiting for USB accessory</string>
