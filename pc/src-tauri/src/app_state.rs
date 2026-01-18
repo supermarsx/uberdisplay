@@ -24,7 +24,7 @@ pub struct HostSettings {
     pub input_mode: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PairedDevice {
     pub id: String,

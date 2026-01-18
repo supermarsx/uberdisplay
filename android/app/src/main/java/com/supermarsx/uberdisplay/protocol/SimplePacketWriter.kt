@@ -18,16 +18,29 @@ class SimplePacketWriter : PacketWriter {
     }
 
     private fun writeTouch(packet: Packet.Touch): ByteArray {
-        val buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN)
+        val count = packet.points.size
+        val buffer = ByteBuffer.allocate(2 + count * 8).order(ByteOrder.LITTLE_ENDIAN)
         buffer.put(ProtocolDataTypes.TOUCH.toByte())
-        buffer.put(packet.points.toByte())
+        buffer.put(count.toByte())
+        for (point in packet.points) {
+            buffer.put(point.pointerId.toByte())
+            buffer.put(if (point.down) 1 else 0)
+            buffer.putShort(clampToShort(point.x))
+            buffer.putShort(clampToShort(point.y))
+            buffer.putShort(clampToShort(point.size))
+        }
         return buffer.array()
     }
 
     private fun writePen(packet: Packet.Pen): ByteArray {
-        val buffer = ByteBuffer.allocate(3).order(ByteOrder.LITTLE_ENDIAN)
+        val buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN)
         buffer.put(ProtocolDataTypes.PEN.toByte())
-        buffer.putShort(packet.pressure.toShort())
+        buffer.put(packet.flags.toByte())
+        buffer.putShort(clampToShort(packet.x))
+        buffer.putShort(clampToShort(packet.y))
+        buffer.putShort(clampToShort(packet.pressure))
+        buffer.putShort(clampToShort(packet.rotation))
+        buffer.putShort(clampToShort(packet.tilt))
         return buffer.array()
     }
 
@@ -67,5 +80,9 @@ class SimplePacketWriter : PacketWriter {
         buffer.put(ProtocolDataTypes.INPUT_CONFIG.toByte())
         buffer.putInt(packet.buttonFunction)
         return buffer.array()
+    }
+
+    private fun clampToShort(value: Int): Short {
+        return value.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
     }
 }

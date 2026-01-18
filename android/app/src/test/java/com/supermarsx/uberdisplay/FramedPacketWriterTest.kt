@@ -11,7 +11,8 @@ import java.nio.ByteOrder
 class FramedPacketWriterTest {
     @Test
     fun prefixesPayloadLength() {
-        val framed = FramedPacketWriter().write(Packet.Touch(points = 1))
+        val point = Packet.TouchPoint(pointerId = 1, down = true, x = 0, y = 0, size = 0)
+        val framed = FramedPacketWriter().write(Packet.Touch(points = listOf(point)))
         val buffer = ByteBuffer.wrap(framed).order(ByteOrder.LITTLE_ENDIAN)
         val len = buffer.int
         assertEquals(framed.size - 4, len)

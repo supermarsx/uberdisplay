@@ -181,13 +181,15 @@
 - [x] Add initial UI shell styled to the spec (dark watercolor theme)
 - [x] Add Rust protocol helpers for handshake and stream chunk framing
 - [x] Add unit tests for host handshake and stream chunk framing
-- [ ] Wire Tauri `app_status` command into the UI status cards
-- [ ] Add transport status model (USB AOAP, TCP listen/connect) in Rust
-- [ ] Implement host->client packet builder for Configure/Frame/State
-- [ ] Add client->host packet parser for Touch/Pen/Keyboard/InputKey
-- [ ] Add host settings model (codec, bitrate, resolution, refresh cap)
-- [ ] Add device registry for paired Android devices
-- [ ] Add Windows driver probe stub + UI status surface
+- [x] Wire Tauri `app_status` command into the UI status cards
+- [x] Add transport status model (USB AOAP, TCP listen/connect) in Rust
+- [x] Implement host->client packet builder for Configure/Frame/State
+- [x] Add client->host packet parser for Touch/Pen/Keyboard/InputKey
+- [x] Add host settings model (codec, bitrate, resolution, refresh cap)
+- [x] Add device registry storage + persistence for paired Android devices
+- [x] Add device registry CRUD commands (add/update/remove) exposed via Tauri
+- [x] Add Windows driver probe stub + UI status surface
+- [x] Implement Windows driver detection (virtual display enumeration) + active display query
 - [x] Add action menu quick buttons in MirrorActivity
 - [x] Limit action menu buttons to 10 (spec)
 - [x] Refresh ActionMenuActivity count on resume
@@ -196,4 +198,12 @@
 - [x] Add TCP status label to MirrorActivity
 - [x] Show TCP outbox size in settings
 - [x] Show TCP packet counters in settings
-- [ ] Add transport counter reset action in settings
+- [x] Add transport counter reset action in settings
+- [x] Add transport status reset test (unit)
+- [x] Enforce max 10 action menu items in repository
+- [x] Add test for ActionMenuRepository max items
+- [x] Add transport summary line in MainActivity
+- [x] Expand Touch packet writer to include points per spec
+- [ ] Expand Pen packet writer to spec fields
+- [ ] Build Pen packet from MotionEvent axes
+- [ ] Add Pen writer tests

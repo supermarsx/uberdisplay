@@ -8,7 +8,9 @@ class TouchInputHandler(
 ) : View.OnTouchListener {
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
         if (event == null) return false
-        sender.sendTouch(event)
+        val width = v?.width ?: 0
+        val height = v?.height ?: 0
+        sender.sendTouch(event, width, height)
         return true
     }
 }

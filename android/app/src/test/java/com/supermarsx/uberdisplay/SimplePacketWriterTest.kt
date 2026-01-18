@@ -9,10 +9,11 @@ import org.junit.Test
 class SimplePacketWriterTest {
     @Test
     fun writesTouchPacket() {
-        val bytes = SimplePacketWriter().write(Packet.Touch(points = 2))
-        assertEquals(2, bytes.size)
+        val point = Packet.TouchPoint(pointerId = 1, down = true, x = 100, y = 200, size = 50)
+        val bytes = SimplePacketWriter().write(Packet.Touch(points = listOf(point)))
+        assertEquals(10, bytes.size)
         assertEquals(ProtocolDataTypes.TOUCH.toByte(), bytes[0])
-        assertEquals(2.toByte(), bytes[1])
+        assertEquals(1.toByte(), bytes[1])
     }
 
     @Test

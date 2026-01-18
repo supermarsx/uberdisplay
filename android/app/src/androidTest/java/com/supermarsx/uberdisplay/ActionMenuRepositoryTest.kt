@@ -33,4 +33,15 @@ class ActionMenuRepositoryTest {
         assertEquals("Test*", loaded[0].title)
         assertEquals(124, loaded[0].actionId)
     }
+
+    @Test
+    fun capsItemsAtTen() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repo = ActionMenuRepository(context)
+        val items = (0..15).map { ActionMenuItem(it, "Item $it", 1000 + it) }
+        repo.saveItems(items)
+
+        val loaded = repo.getItems()
+        assertEquals(10, loaded.size)
+    }
 }

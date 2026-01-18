@@ -18,6 +18,7 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         wireSonarPenPreferences()
         wireDiagnosticsPreferences()
+        wireTransportReset()
         updateTransportStatus()
     }
 
@@ -104,6 +105,18 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
             TransportStatus.State.STOPPED -> getString(R.string.aoap_status_stopped)
             TransportStatus.State.WAITING -> getString(R.string.aoap_status_waiting)
             TransportStatus.State.LISTENING -> getString(R.string.aoap_status_listening)
+        }
+    }
+
+    private fun wireTransportReset() {
+        val resetPref = findPreference<Preference>("tcp_reset_counters")
+        resetPref?.setOnPreferenceClickListener {
+            TransportStatus.tcpPacketsIn = 0
+            TransportStatus.tcpPacketsOut = 0
+            TransportStatus.tcpConnections = 0
+            TransportStatus.lastTcpConnectionAt = 0
+            updateTransportStatus()
+            true
         }
     }
 

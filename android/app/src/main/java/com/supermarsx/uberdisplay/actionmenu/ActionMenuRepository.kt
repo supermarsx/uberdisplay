@@ -8,12 +8,14 @@ class ActionMenuRepository(private val context: Context) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val raw = prefs.getString(KEY_ITEMS, null) ?: return defaultItems()
         val items = parseItems(raw)
-        return if (items.isEmpty()) defaultItems() else items
+        val resolved = if (items.isEmpty()) defaultItems() else items
+        return resolved.take(MAX_ITEMS)
     }
 
     fun saveItems(items: List<ActionMenuItem>) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit().putString(KEY_ITEMS, serializeItems(items)).apply()
+        val trimmed = items.take(MAX_ITEMS)
+        prefs.edit().putString(KEY_ITEMS, serializeItems(trimmed)).apply()
     }
 
     private fun defaultItems(): List<ActionMenuItem> {
@@ -42,5 +44,6 @@ class ActionMenuRepository(private val context: Context) {
 
     companion object {
         private const val KEY_ITEMS = "action_menu_items"
+        private const val MAX_ITEMS = 10
     }
 }

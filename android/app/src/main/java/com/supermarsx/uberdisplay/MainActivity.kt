@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsButton: Button
     private lateinit var connectButton: Button
     private lateinit var connectionMode: TextView
+    private lateinit var transportSummary: TextView
     private val connectionController = AppServices.connectionController
     private var lastState: ConnectionState = ConnectionState.IDLE
     private lateinit var prefs: android.content.SharedPreferences
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         settingsButton = findViewById(R.id.settingsButton)
         connectButton = findViewById(R.id.connectButton)
         connectionMode = findViewById(R.id.connectionMode)
+        transportSummary = findViewById(R.id.transportSummary)
         AppServices.init(this)
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
+        updateTransportSummary()
 
         settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -80,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         prefs.registerOnSharedPreferenceChangeListener(prefListener)
         updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
+        updateTransportSummary()
     }
 
     override fun onPause() {
@@ -147,6 +151,7 @@ class MainActivity : AppCompatActivity() {
                 else -> R.string.connect
             }
         )
+        updateTransportSummary()
     }
 
     private fun updateConnectionModeLabel(mode: String) {
@@ -156,6 +161,18 @@ class MainActivity : AppCompatActivity() {
             R.string.connection_mode_label_tcp
         }
         connectionMode.setText(textRes)
+    }
+
+    private fun updateTransportSummary() {
+        val outbox = com.supermarsx.uberdisplay.transport.TransportOutbox.tcpQueue.size()
+        val inPackets = com.supermarsx.uberdisplay.transport.TransportStatus.tcpPacketsIn
+        val outPackets = com.supermarsx.uberdisplay.transport.TransportStatus.tcpPacketsOut
+        transportSummary.text = getString(
+            R.string.transport_summary,
+            outbox,
+            inPackets,
+            outPackets
+        )
     }
 }
 }
