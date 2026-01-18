@@ -23,6 +23,11 @@
     <string name="mirror_placeholder">Mirror view placeholder</string>
     <string name="action_menu">Action Menu</string>
     <string name="action_menu_placeholder">Action menu placeholder</string>
+    <string name="action_menu_title">Action Menu</string>
+    <string name="action_menu_subtitle">Configure buttons and shortcuts.</string>
+    <string name="action_menu_edit">Edit Action Menu</string>
+    <string name="action_menu_items_count">Items: %1$d</string>
+    <string name="action_menu_items_count_placeholder">Items: 0</string>
     <string name="disconnect">Disconnect</string>
     <string name="sonarpen_calibration_title">SonarPen Calibration</string>
     <string name="sonarpen_permission_needed">Microphone permission required for SonarPen.</string>

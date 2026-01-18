@@ -10,6 +10,7 @@ import com.supermarsx.uberdisplay.input.TouchInputHandler
 import android.view.KeyEvent
 import android.widget.Button
 import android.widget.Toast
+import android.content.Intent
 
 class MirrorActivity : AppCompatActivity() {
     private val inputSender = InputSenderStub()
@@ -27,6 +28,7 @@ class MirrorActivity : AppCompatActivity() {
 
         val actionButton = findViewById<Button>(R.id.actionMenuButton)
         actionButton.setOnClickListener {
+            startActivity(Intent(this, ActionMenuActivity::class.java))
             Toast.makeText(this, R.string.action_menu_placeholder, Toast.LENGTH_SHORT).show()
         }
     }

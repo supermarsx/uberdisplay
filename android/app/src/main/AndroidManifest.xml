@@ -32,6 +32,11 @@
             android:exported="false"
             android:label="@string/sonarpen_calibration_title" />
 
+        <activity
+            android:name=".ui.ActionMenuActivity"
+            android:exported="false"
+            android:label="@string/action_menu_title" />
+
     </application>
 
 </manifest>

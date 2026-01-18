@@ -14,6 +14,9 @@
 - [x] Document root module IPC in `spec.md` or a linked appendix
 - [x] Add transport listener stub and hook it up
 - [x] Add session manager stub and wire into connection controller
+- [x] Add Action Menu activity placeholder
+- [x] Add action menu model/config stubs
+- [ ] Add action menu edit screen stub
 
 ## Android Bootstrap (Kotlin)
 - [x] Create `android/` project root and Gradle settings
@@ -63,6 +66,7 @@
 - [x] Add Settings screen entry point from MainActivity
 - [x] Add status chip styling for connection state
 - [x] Add navigation to MirrorActivity from Connect button
+- [x] Add Action Menu activity placeholder
 
 ## SonarPen Integration (Scaffold)
 - [x] Add SDK module reference or dependency wiring
