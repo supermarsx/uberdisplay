@@ -27,4 +27,18 @@ class SimplePacketWriterTest {
         val bytes = SimplePacketWriter().write(Packet.Error(code = 1))
         assertEquals(0, bytes.size)
     }
+
+    @Test
+    fun writesKeyboardPacket() {
+        val bytes = SimplePacketWriter().write(Packet.Keyboard(keyCode = 42, down = true))
+        assertEquals(6, bytes.size)
+        assertEquals(ProtocolDataTypes.KEYBOARD.toByte(), bytes[0])
+    }
+
+    @Test
+    fun writesCommandPacket() {
+        val bytes = SimplePacketWriter().write(Packet.Command(commandId = 99))
+        assertEquals(5, bytes.size)
+        assertEquals(ProtocolDataTypes.COMMAND.toByte(), bytes[0])
+    }
 }

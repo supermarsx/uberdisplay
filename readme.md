@@ -1,6 +1,10 @@
 # UberDisplay
 
-![license](https://img.shields.io/badge/license-MIT-green)
+![license](https://img.shields.io/github/license/supermarsx/uberdisplay)
+![stars](https://img.shields.io/github/stars/supermarsx/uberdisplay)
+![forks](https://img.shields.io/github/forks/supermarsx/uberdisplay)
+![watchers](https://img.shields.io/github/watchers/supermarsx/uberdisplay)
+![issues](https://img.shields.io/github/issues/supermarsx/uberdisplay)
 ![status](https://img.shields.io/badge/status-spec%20%2B%20reference-blue)
 ![platform](https://img.shields.io/badge/platform-android%20%7C%20pc-lightgrey)
 

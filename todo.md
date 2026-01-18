@@ -33,6 +33,9 @@
 - [x] Add TCP listener thread to accept connections
 - [x] Show TCP connection count in settings
 - [x] Add INTERNET permission for TCP transport
+- [ ] Add framed packet writer for outgoing packets
+- [ ] Write Keyboard/Command packets in SimplePacketWriter
+- [ ] Send keyboard packets from InputSenderStub
 
 ## Next Focus
 - [x] Add TCP packet reader loop skeleton

@@ -2,12 +2,12 @@ package com.supermarsx.uberdisplay.input
 
 import android.util.Log
 import android.view.MotionEvent
+import com.supermarsx.uberdisplay.protocol.FramedPacketWriter
 import com.supermarsx.uberdisplay.protocol.Packet
-import com.supermarsx.uberdisplay.protocol.SimplePacketWriter
 import com.supermarsx.uberdisplay.transport.TransportOutbox
 
 class InputSenderStub : InputSender {
-    private val writer = SimplePacketWriter()
+    private val writer = FramedPacketWriter()
     private val senderQueue = TransportOutbox.tcpQueue
 
     override fun sendTouch(event: MotionEvent) {
@@ -32,6 +32,9 @@ class InputSenderStub : InputSender {
     }
 
     override fun sendKey(keyCode: Int, down: Boolean) {
-        Log.d("InputSenderStub", "key code=$keyCode down=$down")
+        val packet = Packet.Keyboard(keyCode = keyCode, down = down)
+        val bytes = writer.write(packet)
+        senderQueue.enqueue(bytes)
+        Log.d("InputSenderStub", "key code=$keyCode down=$down bytes=${bytes.size}")
     }
 }
