@@ -57,6 +57,18 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="8dp" />
 
+    <LinearLayout
+        android:id="@+id/actionMenuContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/mirrorInfoBanner"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="12dp" />
+
     <Button
         android:id="@+id/actionMenuButton"
         android:layout_width="wrap_content"
