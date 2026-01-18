@@ -188,5 +188,7 @@
 - [ ] Add host settings model (codec, bitrate, resolution, refresh cap)
 - [ ] Add device registry for paired Android devices
 - [ ] Add Windows driver probe stub + UI status surface
-- [ ] Add action menu quick buttons in MirrorActivity
-- [ ] Limit action menu buttons to 10 (spec)
+- [x] Add action menu quick buttons in MirrorActivity
+- [x] Limit action menu buttons to 10 (spec)
+- [ ] Refresh ActionMenuActivity count on resume
+- [ ] Add long-press action menu button to send config
