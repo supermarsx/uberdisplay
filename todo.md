@@ -166,4 +166,4 @@
 - [x] Add handshake parser tests
 - [x] Add StreamChunkParser test for multiple packets
 - [x] Add StreamBuffer multiple packet test
-- [ ] Add handshake parsing in TcpPacketLoop
+- [x] Add handshake parsing in TcpPacketLoop

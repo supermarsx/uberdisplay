@@ -1,11 +1,13 @@
 package com.supermarsx.uberdisplay.transport
 
 import com.supermarsx.uberdisplay.Diagnostics
+import com.supermarsx.uberdisplay.protocol.Handshake
 import com.supermarsx.uberdisplay.protocol.StreamChunkParser
 import java.io.InputStream
 
 class TcpPacketLoop {
     private val chunkParser = StreamChunkParser()
+    private var handshakeDone = false
 
     fun run(input: InputStream) {
         val buffer = ByteArray(4096)
@@ -16,8 +18,31 @@ class TcpPacketLoop {
             for (i in 0 until count) {
                 pending.add(buffer[i])
             }
-            parseChunks(pending)
+            if (!handshakeDone) {
+                parseHandshake(pending)
+            }
+            if (handshakeDone) {
+                parseChunks(pending)
+            }
         }
+    }
+
+    private fun parseHandshake(pending: MutableList<Byte>) {
+        val nullIndex = pending.indexOf(0)
+        if (nullIndex == -1) return
+        val bytes = ByteArray(nullIndex)
+        for (i in 0 until nullIndex) {
+            bytes[i] = pending[i]
+        }
+        val line = bytes.toString(Charsets.UTF_8)
+        val version = Handshake.parseVersion(line)
+        if (version != null) {
+            Diagnostics.logInfo("tcp_handshake version=$version")
+            handshakeDone = true
+        } else {
+            Diagnostics.logError("tcp_handshake invalid")
+        }
+        pending.subList(0, nullIndex + 1).clear()
     }
 
     private fun parseChunks(pending: MutableList<Byte>) {
