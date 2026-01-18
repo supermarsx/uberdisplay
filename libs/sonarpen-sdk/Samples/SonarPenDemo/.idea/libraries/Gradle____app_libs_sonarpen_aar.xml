@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: ./app/libs/sonarpen.aar" external-system-id="GRADLE">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-3/3af60c86b09a81ca73cf3343e971f878/transformed/jetified-sonarpen/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/3af60c86b09a81ca73cf3343e971f878/transformed/jetified-sonarpen/res" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-3/3af60c86b09a81ca73cf3343e971f878/transformed/jetified-sonarpen/AndroidManifest.xml" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

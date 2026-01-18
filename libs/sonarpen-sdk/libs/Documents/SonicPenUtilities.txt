@@ -1,0 +1,244 @@
+/******************************************************************************************/
+/***                                                                                    ***/
+/***    Sonar Pen Android Library, SonarPenUtilities                                    ***/
+/***    Version: 3.11 (2024042101)                                                      ***/
+/***    ---------------------------------------------------------------------------     ***/
+/***    Copyrights GreenBlub                                                            ***/
+/***                                                                                    ***/
+/******************************************************************************************/
+
+**  Library need to start and stop, due to library require to generate sound wave and through audio record (microphone) to retrieve current pen pressure.
+**  version 1.0 (2018120201) using new logic for pen and finger recognization.
+**  version 1.0 (2018121101) change logic for calculate Amplitudes, with using higher frequency, change multi-touch finger recognization logic.
+**  version 1.0 (2019011601) change logic for Palm Rejection, Sonar Pen detection method.
+**  version 1.0 (2019012101) optional by pass SonarPen Detection Logic, treat anything plugged as SonarPen
+                             add SonarPen detected Touch pointer ID
+**  version 1.0 (2019012901) change logic for Palm rejection.
+**  version 1.0 (2019021501) modify logic for Palm rejection.
+**  version 1.0 (2019022101) change by pass SonarPen Detection Logic as Default, add function override this default setting.
+**  version 1.0 (2019022501) modify logic for audio reading, make it faster and use less on CPU power.  Fixed by pass detection bugs
+**  version 1.0 (2019022801) modify logic for audio reading, make it faster and use less on CPU power.
+**  version 1.0 (2019022801) fix app crash bugs.
+**  version 1.0 (2019030101) fine tune on change logic for fast audio reading, sensitive improve.
+**  version 1.0 (2019033101) after fine tune logic for fast audio reading have bugs on some Samsung device, and add back android 4.4 compatible.
+**  version 1.0 (2019040201) fine tune logic finger rejection with handling of samsung devices' audio reading bugs.
+**  version 1.0 (2019042001) fixed problem caused by calling start() -> stop() -> start() in a short period.
+**  version 1.0 (2019042901) add status while audio volume can't change, which will cause pen not work properly.
+**  version 1.0 (2019042901) add Sonarpen audio frequence pause and resume function.
+**  version 1.0 (2020092601) add Sonarpen support new Sonarpen Calibrate application & amend detect button with some device not work, add Android target SDK 29 support.
+**  version 2.0 (2020122101) add Manual Calibrate support not file base synchronize with SonarPen compatible apps.
+                             currently keep file base manual calibrate with app broadcast sync, file base calibrate compatible with previous verion.
+                             file base calibrate will not be supported in Android OS 11.
+**  version 2.01 (2021021401) fixed problem to detect stylus produce after Q4 2020.
+**  version 2.02 (2021022401) fixed some device filter out high frequency that SonarPen is using.
+**  version 2.03 (2021022701) fixed bugs caused fail to detect sonarpen after multi-point touches.
+**  version 2.04 (2021032202) if Calibrate app not exists, will automatically popup Google PlayStore/Amazon App Market/Huawei AppGallery
+**  version 2.08 (2021060301) More accurate Touch event logic, add skip touch down for allow sonarpen have time to detect pen press.
+**  version 2.09 (2021061701) fine tune, pen detect logic.
+**  version 2.10 (2021070601) add support some abnormal devices.
+**  version 3.00 (2023051501) add support detect USBC device, change the pressure curve.
+**  version 3.03 (2023072801) add support some abnormal devices. 
+**  version 3.04 (2024040801) fixed library cause "Duplicate class a.a found ....", change USBC Sonarpen not proper detect touch screen.
+**  version 3.05 (2024041101) fixed library cause exception "One of RECEIVER_EXPORTED or RECEIVER_NOT_EXPORTED should be specified..." while running on Android 14 devices.
+**  version 3.10 (2024042001) Add function to turn on/off (skip touch event except sonarpen event)
+
+--  properties
+
+    NOT_RUNNING
+        type:   integer
+        note:   library not yet start.
+
+    NO_ERROR
+        type:   integer
+        note:   library start running without error.
+
+    ERROR_NO_PERMISSION
+        type:   integer
+        note:   library fail to start, due to Audo Record permission not allowed.
+
+    VERSION_NO
+        type:   string
+        note:   library version no.
+
+--  method
+    SonarPenUtilities(Context context)
+        type:           class constructor
+        parameters:     context is the application context passed into library for allow access to audio record.
+        note:           library must be contruct before use.
+
+    setByPassDetectionAsDefault(boolean b)              ** new on 1.0 (2019022101)
+        type:           no return
+        parameters:     b is turn on or off by pass SonarPen Detection Logic as Default.
+        note:           ovrride default before call start() function.
+
+    getState()
+        type:           return integer
+        note:           get library running status, e.g. NOT_RUNNING, NO_ERROR, ERROR_NO_PERMISSION
+
+    start()
+        type:           return integer
+        note:           try to start library running with default by pass SonarPen Detection logic, default can be override by call the function "setByPassDetectionAsDefault". return running status, e.g. NOT_RUNNING, NO_ERROR, ERROR_NO_PERMISSION
+                        before call start(), please ensure your application have access permission on WRITE_EXTERNAL_STORAGE and RECORD_AUDIO.
+                        for Android 5.0 or above, application require to call requestPermissions to get user access permission.
+
+    startWithByPass()
+        type:           return integer
+        note:           try to start library running with by pass SonarPen Detection logic, anything plugged treat as Sonar Pen. return running status, e.g. NOT_RUNNING, NO_ERROR, ERROR_NO_PERMISSION
+                        before call startWithByPass(), please ensure your application have access permission on WRITE_EXTERNAL_STORAGE and RECORD_AUDIO.
+                        for Android 5.0 or above, application require to call requestPermissions to get user access permission.
+    stop()
+        type:           no return
+        note:           try to stop library running.
+
+    audioPause()
+        type:           return true means is paused, false not succes audio frequency still playing.
+        note:           pause the audio frequency.
+
+    audioResume()
+        type:           return false means is resumed audio frequency is playing, true audio still paused.
+        note:           resume the audio frequency.
+
+    getIsAudioPaused()
+        type:           return true means is paused, false is playing.
+        note:           return the audio frequency paused status.
+
+    isSonicPenButton(KeyEvent keyEvent)
+        type:           return boolean
+        parameters:     KeyEvent from onKeyDown or onKeyUp.
+        note:           check if SonicPen Button is pressed, true is SonicPen Button Event.
+
+    getSonicPenButtonPressed()
+        type:           return boolean
+        note:           get current SonicPen Button is pressed, true is SonicPen Button Pressed.
+
+    addSonarPenCallback(SonarPenCallBack sonicpencallback)
+        type:           no return
+        note:           attach sonicpencallback with Library to allow fire Button Press function.
+
+    addSonarPenToView(View view)
+        type:           no return
+        note:           attach SonicPen Handler with view.
+
+    isUsingManualCalibrate()
+        type:           return boolean
+        note:           check if the SonarPen is using the reading from Manual Calibration.
+
+    markSettingValue()          * deprecated in version 2.0
+        type:           return boolean, False means current reading is not good sample.
+        note:           mark and save the current reading as Manual Calibration reading.
+
+    putManualSetting()          * deprecated in version 2.0
+        type:           no return
+        note:           save the Manual Calibration reading into Android System.
+
+    clearManualSetting()        * deprecated in version 2.0
+        type:           no return
+        note:           clear the manual Calibration reading from Android System
+
+    getState()
+        type:           return State of the SonarPen Library Status
+                        value:
+                                SonarPenUtilities.NOT_RUNNING                   // current the SonarPen Library is not in Running mode.
+                                SonarPenUtilities.NO_ERROR                      // current the SonarPen Library is in Running mode without error.
+                                SonarPenUtilities.ERROR_NO_PERMISSION           // current the SonarPen Library is not in Running mode with no Permission error.
+
+        note:           Get the current State of SonarPen Library
+
+    getManualMinValue()
+        type:           return current marked Minimun Value.
+                        in Float.
+
+        note:           Get the current marked Minimun Value for Manual Calibrate
+
+    getManualMaxValue()
+        type:           return current marked Maximun Value.
+                        in Float.
+
+        note:           Get the current marked Maximun Value for Manual Calibrate
+
+    getCurrentReadingValue(SonarPenReadings readobj)
+        default refresh reading
+    getCurrentReadingValue(SonarPenReadings readobj, boolean bRefresh)
+        type:           return current reading into SonarPenReadings Object.
+                        bRefresh false will get the last reading not force it refresh reading.
+
+        note:           Get the current Reading value from SonarPen Library.
+                        if SonarPen not present, the current value will be zero.
+
+        SonarPenReadings class structure.                       // in sonarpen.aar library.
+                        public class SonarPenReadings {
+                            public float minValue;              // minimun value from all readings.
+                            public float currentValue;          // current readings
+                            public float maxValue;              // maximun value from all readings.
+                            public float touchMinValue;         // pen touch minimun value
+                            public boolean bLowFreq;            // is Using low frequency for audio output.
+                            public int currentSoundVol;         // current audio Volume level
+                            public float manualMax;             // Calibrate minimun value.
+                            public float manualMin;             // Calibrate maximun value.
+                            public float pressure;              // current calculated pressure.
+                        }
+
+    getCurrentPressure()
+        type:           return calculated pressure from Sonar Pen.
+                        in float.
+
+        Note:           Get the current calculated pressure, which will be based on manaual calibrate if setted.
+
+    isSonarPenOnScreen()
+        type:           return boolean if Sonar Pen is touch on screen.
+
+    getUseTouchSize()
+        type:           return boolean if Sonar Pen Utilities is using Touch Size for Palm Rejection
+
+    setUseTouchSize(boolean bOnOff)
+        type:           no return, bOnOff request Sonar Pen Utilities to use Touch Size for Palm Rejection
+
+    getSystemPenId()
+        type:           return integer, that detected as SonarPen Touch Pointer ID.
+                        return -1, means no SonarPen with current Touch Event.
+
+    isCalibrateAppInstalled()       * new in version 2.0
+        type:           return boolean, if SonarPen Calibrate Application is it installed.
+    
+    startCalibrateApp()             * new in version 2.0
+        start the SonarPen Calibrate Application, if it is already installed.
+        if not installed, it will popup PlayStore with SonarPen Calibrate Application.
+
+    startDownloadCalibrateApp()     * new in version 2.0
+        it will popup PlayStore with SonarPen Calibrate Application
+
+    startCalibrateScreen()          * new in version 2.0
+        call SonarPen Calibrate Application, if it is already installed.
+
+    runOnLowFrequency()             * new in version 2.0.2
+        return TRUE, if sonarpen library is using low frequency, that the current device have filter out high frequency. 
+
+    clearSkipTouchDownEvent()       * new in version 2.08
+        set SonarPen not to skip the first touch down event.
+
+    setSkipTouchDownEvent()         * new in version 2.08
+        set SonarPen skip first touch down event, for more samples to detect the SonarPen Press.
+
+    reloadOnResume()                * new in version 3.00
+        reload Calibrate data.
+
+    setPressureTuneFormula(int style) * new in version 3.00
+        type: style is 0: "low Pressure Sensitive Level" or 1: "meduim Pressure Sensitive Level".
+
+    getPressureTuneFormula()        * new in version 3.00
+        return 0: "low Pressure Sensitive Level", 1: "meduim Pressure Sensitive Level".
+
+    isSonarPenOnUSBC()              * new in version 3.00
+        return true: SonarPen is on USBC port, false: SonarPen is not on USBC port.
+
+    setSkipFingerTouchEvent(boolean bOnOff)             * new in version 3.10
+        type:           no return, bOnOff turn on/off filter touch event except sonarpen stylus event.
+
+    getSkipFingerTouchEvent()                           * new in version 3.10
+        return true:    filter touch event except sonarpen stylus event is turned on.
+   
+    setDebugLogOnOff(boolean bOnOff)                    * new in version 3.11
+        type:           no return, bOnOff turn on/off debug logcat messages, default off.
+
+    getDebugLogStatus()
+        return true:    debug logcat messages will be log in Logcat console.

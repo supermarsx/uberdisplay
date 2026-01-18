@@ -1,0 +1,47 @@
+/******************************************************************************************/
+/***                                                                                    ***/
+/***    Sonar Pen Android Library, SonarPenActivity                                     ***/
+/***    Version: 3.11 (2024042101)                                                      ***/
+/***    ---------------------------------------------------------------------------     ***/
+/***    Copyrights GreenBlub                                                            ***/
+/***                                                                                    ***/
+/******************************************************************************************/
+
+**  AppCompatActivity replace for simplify SonarPen Support.
+
+--  properties
+
+    thisSonarPen
+    type:           SonarPenUtilities
+    note:           self created SonarPenUtilities.
+
+    bSonarPenByPassDetection
+    type:           boolean
+    note:           By Pass Sonar Pen Detection
+
+**  inside SonarPenActivity is already implements,
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (thisSonarPen.isSonicPenButton(event)) return true;
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (thisSonarPen.isSonicPenButton(event)) return true;
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        thisSonarPen.reloadOnResume();
+        thisSonarPen.start();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        thisSonarPen.stop();
+    }
+

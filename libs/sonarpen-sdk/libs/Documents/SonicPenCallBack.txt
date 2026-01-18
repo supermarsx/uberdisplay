@@ -1,0 +1,36 @@
+/******************************************************************************************/
+/***                                                                                    ***/
+/***    Sonar Pen Android Library, SonarPenCallBack                                     ***/
+/***    Version: 3.11 (2024042101)                                                      ***/
+/***    ---------------------------------------------------------------------------     ***/
+/***    Copyrights GreenBlub                                                            ***/
+/***                                                                                    ***/
+/******************************************************************************************/
+
+**  Interface to retrieve SonarPen Button pressed event.
+
+--  method
+    onSonarPenButtonPressed()
+        note:       fire while SonarPen Button Pressed.
+    onSonarPenStatusChange(state)
+        note:       fire while SonarPen state change.
+        state value : SonarPenCallBack.INIT_STAGE                           // SonarPen library just started.
+                      SonarPenCallBack.CALIBRATE_STAGE                      // SonarPen library ready for automatic calibrate
+                      SonarPenCallBack.CALIBRATE_SONAR_PEN                  // SonarPen Automatic calibrate started.
+                      SonarPenCallBack.CLOSED_STAGE                         // SonarPen Library prepare to close.
+                      SonarPenCallBack.INIT_FAIL                            // SonarPen Library initialize fail, including Audio input/output not successfully start, maybe due to uses-permission
+                      SonarPenCallBack.SONAR_PEN_NOT_PRESS                  // SonarPen is not pressed
+                      SonarPenCallBack.SONAR_PEN_PRESSED                    // SonarPen is pressed
+                      SonarPenCallBack.SONAR_PEN_ABSENSE                    // SonarPen is not touching the screen.  (Deprecated after version 1.0 (2019011602))
+                      SonarPenCallBack.SONAR_PEN_EXIST                      // SonarPen is touching the screen.      (Deprecated after version 1.0 (2019011602))
+                      SonarPenCallBack.SONAR_PEN_NOT_PLUGED                 // SonarPen is not pluged in
+                      SonarPenCallBack.SONAR_PEN_NOT_DETECTED_BY_PASSED     // Backward compatible, old sonarpen detection fail but By Passed Detection is setted.  New SonarPen not correctly reported.
+                      SonarPenCallBack.WAITING_HEADSET                      // There is nothing pluged in headset connector
+                      SonarPenCallBack.AUDIO_CHANNEL_FAIL                   // SonarPen library can't open audio channel.
+                      SonarPenCallBack.AUDIO_VOL_CANT_CHANGE                // SonarPen Library can't change audio volume, will cause pen not function correctly.
+
+
+**  SonarPenCallBack source code like this,
+    public interface SonarPenCallBack {
+        public void onSonarPenButtonPressed();
+    }

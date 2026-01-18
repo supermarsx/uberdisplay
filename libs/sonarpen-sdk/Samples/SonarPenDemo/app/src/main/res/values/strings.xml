@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SonarPenDemo</string>
+    <string name="menu">Menu</string>
+    <string name="calibrate_text">Sonar Pen Calibrate, Tap on screen with pressure.</string>
+</resources>
