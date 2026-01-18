@@ -193,4 +193,6 @@
 - [x] Refresh ActionMenuActivity count on resume
 - [x] Add long-press action menu button to send config
 - [x] Add long-press config toast in MirrorActivity
-- [ ] Add TCP status label to MirrorActivity
+- [x] Add TCP status label to MirrorActivity
+- [x] Show TCP outbox size in settings
+- [ ] Show TCP packet counters in settings

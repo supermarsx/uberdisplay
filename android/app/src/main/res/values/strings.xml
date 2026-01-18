@@ -65,6 +65,8 @@
     <string name="tcp_port_title">TCP port</string>
     <string name="tcp_port_summary">Port 1445</string>
     <string name="tcp_port_summary_with_state">Port %1$d (%2$s, connections %3$d, %4$s)</string>
+    <string name="tcp_outbox_title">TCP outbox</string>
+    <string name="tcp_outbox_summary">Queued packets: %1$d</string>
     <string name="tcp_last_connection_never">last: never</string>
     <string name="tcp_last_connection_seconds">last: %1$ds ago</string>
     <string name="aoap_status_title">AOAP status</string>
@@ -82,4 +84,6 @@
     <string name="mirror_info_banner">Input is forwarded to the host while connected.</string>
     <string name="session_pause">Pause Session</string>
     <string name="session_resume">Resume Session</string>
+    <string name="tcp_status_placeholder">TCP: 0 (STOPPED)</string>
+    <string name="tcp_status_summary">TCP: %1$d (%2$s)</string>
 </resources>

@@ -1,26 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod app_state;
 mod protocol;
 
-use serde::Serialize;
-
-#[derive(Debug, Serialize)]
-struct AppStatus {
-    protocol_version: u16,
-    driver_ready: bool,
-    usb_ready: bool,
-    wifi_ready: bool,
-}
-
 #[tauri::command]
-fn app_status() -> AppStatus {
+fn app_status() -> app_state::AppStatus {
     // TODO: Populate status from transport and driver probes.
-    AppStatus {
-        protocol_version: 4,
-        driver_ready: false,
-        usb_ready: false,
-        wifi_ready: true,
-    }
+    app_state::AppStatus::default()
 }
 
 fn main() {

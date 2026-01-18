@@ -77,6 +77,7 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
 
     private fun updateTransportStatus() {
         val tcpPortPref = findPreference<Preference>("tcp_port")
+        val tcpOutboxPref = findPreference<Preference>("tcp_outbox")
         val aoapPref = findPreference<Preference>("aoap_status")
         val tcpStateLabel = when (TransportStatus.tcpState) {
             TransportStatus.State.STOPPED -> getString(R.string.transport_state_stopped)
@@ -91,6 +92,8 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
             TransportStatus.tcpConnections,
             lastSeen
         )
+        val outboxSize = com.supermarsx.uberdisplay.transport.TransportOutbox.tcpQueue.size()
+        tcpOutboxPref?.summary = getString(R.string.tcp_outbox_summary, outboxSize)
         aoapPref?.summary = when (TransportStatus.aoapState) {
             TransportStatus.State.STOPPED -> getString(R.string.aoap_status_stopped)
             TransportStatus.State.WAITING -> getString(R.string.aoap_status_waiting)

@@ -19,4 +19,8 @@ class TcpSenderQueue {
         }
         return items
     }
+
+    fun size(): Int {
+        return queue.size
+    }
 }
