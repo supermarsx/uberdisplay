@@ -1,0 +1,7 @@
+<resources>
+    <color name="uberdisplay_primary">#1E1E1E</color>
+    <color name="uberdisplay_primary_variant">#121212</color>
+    <color name="uberdisplay_on_primary">#FFFFFF</color>
+    <color name="uberdisplay_secondary">#8FA38C</color>
+    <color name="uberdisplay_on_secondary">#101010</color>
+</resources>

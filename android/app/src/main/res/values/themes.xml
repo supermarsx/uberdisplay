@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.UberDisplay" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/uberdisplay_primary</item>
+        <item name="colorPrimaryVariant">@color/uberdisplay_primary_variant</item>
+        <item name="colorOnPrimary">@color/uberdisplay_on_primary</item>
+        <item name="colorSecondary">@color/uberdisplay_secondary</item>
+        <item name="colorOnSecondary">@color/uberdisplay_on_secondary</item>
+        <item name="android:statusBarColor">@color/uberdisplay_primary_variant</item>
+        <item name="android:navigationBarColor">@color/uberdisplay_primary_variant</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
+</resources>
