@@ -1,5 +1,8 @@
 # TODO
 
+## Current Focus
+- [ ] Android transport interface stubs (USB AOAP, TCP)
+
 ## Android Bootstrap (Kotlin)
 - [x] Create `android/` project root and Gradle settings
 - [x] Add root Gradle build files and properties
