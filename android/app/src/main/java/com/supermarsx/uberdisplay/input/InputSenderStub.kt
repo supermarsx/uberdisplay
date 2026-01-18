@@ -21,10 +21,10 @@ class InputSenderStub : InputSender {
         )
     }
 
-    override fun sendPen(event: MotionEvent) {
+    override fun sendPen(event: MotionEvent, viewWidth: Int, viewHeight: Int) {
         val flags = buildPenFlags(event)
-        val x = normalize(event.x, event.getSource())
-        val y = normalize(event.y, event.getSource())
+        val x = normalize(event.x, viewWidth)
+        val y = normalize(event.y, viewHeight)
         val pressure = (event.pressure.coerceIn(0f, 1f) * 32767).toInt()
         val rotation = (event.getAxisValue(MotionEvent.AXIS_ROTATION) * 32767).toInt()
         val tilt = (event.getAxisValue(MotionEvent.AXIS_TILT) * 32767).toInt()

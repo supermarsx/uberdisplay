@@ -10,7 +10,9 @@ class PenInputHandler(
         if (event == null) return false
         val tool = event.getToolType(0)
         if (tool == MotionEvent.TOOL_TYPE_STYLUS || tool == MotionEvent.TOOL_TYPE_ERASER) {
-            sender.sendPen(event)
+            val width = v?.width ?: 0
+            val height = v?.height ?: 0
+            sender.sendPen(event, width, height)
             return true
         }
         return false
