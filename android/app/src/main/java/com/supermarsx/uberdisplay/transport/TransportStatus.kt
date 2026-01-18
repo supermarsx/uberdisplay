@@ -18,4 +18,10 @@ object TransportStatus {
 
     @Volatile
     var lastTcpConnectionAt: Long = 0
+
+    @Volatile
+    var tcpPacketsIn: Int = 0
+
+    @Volatile
+    var tcpPacketsOut: Int = 0
 }
