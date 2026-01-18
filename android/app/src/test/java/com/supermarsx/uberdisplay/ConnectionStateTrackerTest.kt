@@ -17,4 +17,10 @@ class ConnectionStateTrackerTest {
         val tracker = ConnectionStateTracker(ConnectionState.CONNECTED)
         assertFalse(tracker.transition(ConnectionState.WAITING))
     }
+
+    @Test
+    fun rejectsErrorToConnected() {
+        val tracker = ConnectionStateTracker(ConnectionState.ERROR)
+        assertFalse(tracker.transition(ConnectionState.CONNECTED))
+    }
 }

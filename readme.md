@@ -34,3 +34,13 @@ Targeted by the spec:
 ## Where to Start
 - Read `spec.md` for system goals, protocol details, and architecture targets.
 - The Android app lives in `android/app/src/main/`.
+
+## Android Build
+From the repo root:
+- `cd android; gradle assembleDebug` builds a debug APK.
+- `cd android; gradle installDebug` installs the debug APK to a connected device.
+- `cd android; gradle test` runs unit tests.
+
+## Android Layout
+- `android/app/src/main/java/com/supermarsx/uberdisplay/` contains app code.
+- `android/app/src/main/res/` contains layouts, strings, themes, and preferences.

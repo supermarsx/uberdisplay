@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="@string/settings_category_root">
+
+        <SwitchPreferenceCompat
+            android:key="use_root_module"
+            android:title="@string/root_module_toggle" />
+
+        <Preference
+            android:key="root_module_status"
+            android:title="@string/root_module_status_title"
+            android:summary="@string/root_module_status_unknown" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/settings_category_sonarpen">
+
+        <Preference
+            android:key="sonarpen_status"
+            android:title="@string/sonarpen_status_title"
+            android:summary="@string/sonarpen_status_unknown" />
+
+        <Preference
+            android:key="sonarpen_calibrate"
+            android:title="@string/sonarpen_calibrate" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/settings_category_diagnostics">
+
+        <SwitchPreferenceCompat
+            android:key="diagnostics_enabled"
+            android:title="@string/diagnostics_enabled_title"
+            android:summary="@string/diagnostics_enabled_summary"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

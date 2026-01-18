@@ -17,6 +17,10 @@ object RootModuleStatus {
 
     data class Handshake(val ok: Boolean, val caps: Long)
 
+    fun isSocketPresent(): Boolean {
+        return File(ROOT_SOCKET_PATH).exists()
+    }
+
     fun checkStatus(): Status {
         if (!File(ROOT_SOCKET_PATH).exists()) {
             return Status.NOT_DETECTED
@@ -57,5 +61,31 @@ object RootModuleStatus {
         val capsValue = capsToken?.substringAfter("caps=")?.removePrefix("0x")
         val caps = capsValue?.toLongOrNull(16) ?: 0
         return Handshake(true, caps)
+    }
+
+    fun checkHandshakeCaps(): Handshake {
+        if (!File(ROOT_SOCKET_PATH).exists()) {
+            return Handshake(false, 0)
+        }
+
+        return try {
+            val socket = LocalSocket()
+            socket.soTimeout = 500
+            socket.connect(LocalSocketAddress(ROOT_SOCKET_PATH, LocalSocketAddress.Namespace.FILESYSTEM))
+            val output = socket.outputStream
+            val input = BufferedReader(InputStreamReader(socket.inputStream))
+
+            output.write("HELLO 1\n".toByteArray())
+            output.write("PING\n".toByteArray())
+            output.flush()
+
+            val hello = input.readLine() ?: ""
+            val pong = input.readLine() ?: ""
+            socket.close()
+
+            parseHandshake(hello, pong)
+        } catch (_: Exception) {
+            Handshake(false, 0)
+        }
     }
 }

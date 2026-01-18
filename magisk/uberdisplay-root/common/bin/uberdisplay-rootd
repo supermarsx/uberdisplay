@@ -3,8 +3,17 @@
 
 SOCKET_PATH="/data/local/tmp/uberdisplay/root.sock"
 CAPS_HEX="0x00000000"
+VERSION="0.1.0"
 
 case "$1" in
+  --version)
+    echo "$VERSION"
+    exit 0
+    ;;
+  --caps)
+    echo "$CAPS_HEX"
+    exit 0
+    ;;
   --health)
     echo "OK 1 caps=${CAPS_HEX}"
     exit 0

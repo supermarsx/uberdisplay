@@ -19,4 +19,11 @@ class RootModuleStatusTest {
         assertFalse(handshake.ok)
         assertEquals(0L, handshake.caps)
     }
+
+    @Test
+    fun parseHandshake_missingCaps() {
+        val handshake = RootModuleStatus.parseHandshake("OK 1", "PONG")
+        assertTrue(handshake.ok)
+        assertEquals(0L, handshake.caps)
+    }
 }

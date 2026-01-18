@@ -301,6 +301,22 @@ The Android app must detect and integrate the module via a narrow, auditable int
   - `oss`/`power` (may include detection UI, but still does not bundle the module)
 - Distribute the Magisk module via non-Play channels (e.g., GitHub releases), with its own updater and changelog.
 
+#### Root IPC (Draft)
+Root module IPC is a local Unix socket exposed at:
+- `/data/local/tmp/uberdisplay/root.sock`
+
+Line-oriented ASCII protocol (terminated by `\n`):
+- Client: `HELLO 1`
+- Server: `OK 1 caps=0x00000000`
+- Client: `PING`
+- Server: `PONG`
+
+Capabilities bitmask (draft):
+- `0x00000001`: input injection (low-latency)
+- `0x00000002`: USB/AOAP tuning helpers
+- `0x00000004`: scheduler/perf tuning hooks
+- `0x00000008`: display pipeline hooks
+
 ### Rust-owned components (Android)
 The following must live in Rust (shared with the PC app wherever possible):
 - `protocol`: packet encode/decode, framing, session IDs, capability negotiation.

@@ -4,4 +4,8 @@
     <color name="uberdisplay_on_primary">#FFFFFF</color>
     <color name="uberdisplay_secondary">#8FA38C</color>
     <color name="uberdisplay_on_secondary">#101010</color>
+    <color name="status_idle_bg">#2D2D2D</color>
+    <color name="status_waiting_bg">#3A3A1E</color>
+    <color name="status_connected_bg">#1E3A2B</color>
+    <color name="status_error_bg">#3A1E1E</color>
 </resources>
