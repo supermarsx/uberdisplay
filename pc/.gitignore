@@ -1,0 +1,10 @@
+# UI build outputs
+app/.next/
+app/out/
+app/node_modules/
+
+# Rust build outputs
+src-tauri/target/
+
+# Env files
+app/.env*

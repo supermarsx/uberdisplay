@@ -16,11 +16,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
+import android.widget.LinearLayout
+import com.supermarsx.uberdisplay.actionmenu.ActionMenuRepository
+import com.supermarsx.uberdisplay.actionmenu.ActionMenuSender
 
 class MirrorActivity : AppCompatActivity() {
     private val inputSender = InputSenderStub()
     private var lastState: com.supermarsx.uberdisplay.ConnectionState =
         com.supermarsx.uberdisplay.ConnectionState.IDLE
+    private val actionMenuSender = ActionMenuSender()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +48,8 @@ class MirrorActivity : AppCompatActivity() {
             startActivity(Intent(this, ActionMenuActivity::class.java))
             Toast.makeText(this, R.string.action_menu_placeholder, Toast.LENGTH_SHORT).show()
         }
+
+        renderActionMenu()
 
         val disconnectButton = findViewById<Button>(R.id.disconnectButton)
         disconnectButton.setOnClickListener {
@@ -80,6 +86,11 @@ class MirrorActivity : AppCompatActivity() {
         AppServices.connectionController.stop()
     }
 
+    override fun onResume() {
+        super.onResume()
+        renderActionMenu()
+    }
+
     private fun bindSessionStatus() {
         val statusView = findViewById<android.widget.TextView>(R.id.sessionStatus)
         val toggleButton = findViewById<Button>(R.id.sessionToggleButton)
@@ -109,6 +120,26 @@ class MirrorActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+    }
+
+    private fun renderActionMenu() {
+        val container = findViewById<LinearLayout>(R.id.actionMenuContainer)
+        container.removeAllViews()
+        val repo = ActionMenuRepository(this)
+        val items = repo.getItems().take(10)
+        for (item in items) {
+            val button = Button(this)
+            button.text = item.title
+            button.setOnClickListener {
+                actionMenuSender.sendTap(item)
+            }
+            container.addView(button)
+        }
+        if (items.isEmpty()) {
+            val hint = android.widget.TextView(this)
+            hint.text = getString(R.string.action_menu_empty_hint)
+            container.addView(hint)
         }
     }
 
