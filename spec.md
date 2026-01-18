@@ -244,6 +244,63 @@ Non-functional requirements:
 
 UberDisplay’s Android app should be as close to native as possible, using **Kotlin** for UI/platform glue and **Rust** for performance-critical logic.
 
+### Play Store compliance (Required)
+The default Android distribution must be fully compatible with Google Play requirements:
+- No root required and no assumptions about privileged permissions.
+- Feature gating: any sensitive capability must be behind explicit user actions, visible settings, and OS permission prompts.
+- No dynamic code loading or behavior intended to bypass Android security model.
+- Clear disclosures for permissions (microphone for SonarPen, network, foreground service).
+- All “advanced” capabilities that require root must be **absent** from the Play build (see Magisk module below).
+
+### Optional Root/Magisk Module (Advanced, Separate Distribution)
+All “lower level access” features must be provided via an **optional Magisk module** that is:
+- Installed by the user independently (out-of-band, not shipped or fetched by the Play build).
+- Strictly optional: the Android app must run fully without it, with graceful degradation.
+- Clearly labeled as advanced/unsupported-by-Play and disabled by default.
+
+#### Root module goals (what “lower level access” means)
+When present, the module can unlock capabilities that are not reliably achievable in a Play-compliant app:
+- **Lower-latency input injection**
+  - Provide a privileged input injection path that reduces latency vs accessibility-based or app-local injection.
+- **Deeper USB/AOAP integration**
+  - More reliable USB device/accessory handling, recovery, and potentially higher throughput I/O paths where feasible.
+- **Network and scheduling tuning**
+  - Optional tuning for CPU affinity/priorities, socket buffers, and power/performance modes to stabilize high FPS.
+- **Display / presentation hooks (device-dependent)**
+  - Optional improvements for presentation timing or display pipeline integration where available on rooted devices.
+
+Non-goals:
+- The module must not attempt to exploit third-party apps or bypass DRM protections.
+- The module must not silently collect data; all telemetry remains opt-in and local by default.
+
+#### App ↔ module interface
+The Android app must detect and integrate the module via a narrow, auditable interface:
+- A single local IPC mechanism (e.g., a Unix domain socket / local TCP on `127.0.0.1` / binder-style service).
+- Explicit handshake with:
+  - module version,
+  - capabilities bitmap,
+  - permissions/feature flags enabled by the user.
+- The app must refuse to use the module if:
+  - version is incompatible,
+  - signature/fingerprint check fails (optional hardening),
+  - user has not explicitly enabled “Use root module” in settings.
+
+#### Security & UX requirements
+- Provide a “Root status” panel showing:
+  - module installed/not installed,
+  - module version and capabilities enabled,
+  - last handshake time and errors.
+- Provide a safe fallback path:
+  - if module disappears mid-session, continue in non-root mode or end session gracefully with a clear message.
+- Config portability:
+  - root-only settings must export/import cleanly but remain inactive on non-root devices.
+
+#### Release engineering separation
+- Maintain separate Android build flavors:
+  - `play` (no root features, Play-compliant)
+  - `oss`/`power` (may include detection UI, but still does not bundle the module)
+- Distribute the Magisk module via non-Play channels (e.g., GitHub releases), with its own updater and changelog.
+
 ### Rust-owned components (Android)
 The following must live in Rust (shared with the PC app wherever possible):
 - `protocol`: packet encode/decode, framing, session IDs, capability negotiation.
