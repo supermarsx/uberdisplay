@@ -12,6 +12,8 @@ import com.supermarsx.uberdisplay.sonarpen.SonarPenStatus
 import android.content.Intent
 import com.supermarsx.uberdisplay.transport.TransportStatus
 import com.supermarsx.uberdisplay.protocol.ProtocolConstants
+import com.supermarsx.uberdisplay.actionmenu.ActionMenuRepository
+import com.supermarsx.uberdisplay.actionmenu.ActionMenuSender
 
 class RootSettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -19,6 +21,7 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
         wireSonarPenPreferences()
         wireDiagnosticsPreferences()
         wireTransportReset()
+        wireActionMenuConfig()
         updateTransportStatus()
     }
 
@@ -72,6 +75,24 @@ class RootSettingsFragment : PreferenceFragmentCompat() {
         val diagnosticsPref = findPreference<SwitchPreferenceCompat>("diagnostics_enabled")
         diagnosticsPref?.setOnPreferenceChangeListener { _, newValue ->
             Diagnostics.setEnabled(newValue as Boolean)
+            true
+        }
+    }
+
+    private fun wireActionMenuConfig() {
+        val sendPref = findPreference<Preference>("action_menu_send_config")
+        sendPref?.setOnPreferenceClickListener {
+            val repo = ActionMenuRepository(requireContext())
+            val first = repo.getItems().firstOrNull()
+            if (first != null) {
+                ActionMenuSender().sendConfig(first)
+            } else {
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    R.string.action_menu_empty,
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
             true
         }
     }

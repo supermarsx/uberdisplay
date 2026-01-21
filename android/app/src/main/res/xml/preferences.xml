@@ -51,6 +51,16 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/settings_category_action_menu">
+
+        <Preference
+            android:key="action_menu_send_config"
+            android:title="@string/action_menu_send_config"
+            android:summary="@string/action_menu_send_config_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/settings_category_connection">
 
         <ListPreference

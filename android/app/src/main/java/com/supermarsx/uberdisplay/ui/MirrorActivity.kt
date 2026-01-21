@@ -15,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.preference.PreferenceManager
 import android.widget.LinearLayout
 import com.supermarsx.uberdisplay.actionmenu.ActionMenuRepository
@@ -81,6 +83,7 @@ class MirrorActivity : AppCompatActivity() {
         AppServices.connectionController.markConnected()
         bindSessionStatus()
         updateTcpStatus()
+        startTcpStatusTicker()
     }
 
     override fun onStop() {
@@ -133,6 +136,17 @@ class MirrorActivity : AppCompatActivity() {
             TransportStatus.tcpConnections,
             TransportStatus.tcpState.name
         )
+    }
+
+    private fun startTcpStatusTicker() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    updateTcpStatus()
+                    delay(1000)
+                }
+            }
+        }
     }
 
     private fun renderActionMenu() {

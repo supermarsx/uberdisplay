@@ -17,10 +17,23 @@ class SimplePacketWriterTest {
     }
 
     @Test
+    fun writesMultiPointTouchPacket() {
+        val points = listOf(
+            Packet.TouchPoint(pointerId = 1, down = true, x = 100, y = 200, size = 50),
+            Packet.TouchPoint(pointerId = 2, down = true, x = 300, y = 400, size = 60)
+        )
+        val bytes = SimplePacketWriter().write(Packet.Touch(points = points))
+        assertEquals(2.toByte(), bytes[1])
+    }
+
+    @Test
     fun writesPenPacket() {
-        val bytes = SimplePacketWriter().write(Packet.Pen(pressure = 512))
-        assertEquals(3, bytes.size)
+        val bytes = SimplePacketWriter().write(
+            Packet.Pen(flags = 1, x = 10, y = 20, pressure = 512, rotation = 0, tilt = 0)
+        )
+        assertEquals(11, bytes.size)
         assertEquals(ProtocolDataTypes.PEN.toByte(), bytes[0])
+        assertEquals(1.toByte(), bytes[1])
     }
 
     @Test

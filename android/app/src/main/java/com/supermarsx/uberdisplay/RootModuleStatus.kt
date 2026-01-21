@@ -8,6 +8,7 @@ import java.io.InputStreamReader
 
 object RootModuleStatus {
     private const val ROOT_SOCKET_PATH = "/data/local/tmp/uberdisplay/root.sock"
+    private const val CACHE_MS = 2000L
 
     enum class Status {
         NOT_DETECTED,
@@ -16,6 +17,11 @@ object RootModuleStatus {
     }
 
     data class Handshake(val ok: Boolean, val caps: Long)
+
+    @Volatile
+    private var lastHandshake: Handshake? = null
+    @Volatile
+    private var lastHandshakeAt: Long = 0
 
     fun isSocketPresent(): Boolean {
         return File(ROOT_SOCKET_PATH).exists()
@@ -64,8 +70,16 @@ object RootModuleStatus {
     }
 
     fun checkHandshakeCaps(): Handshake {
+        val now = System.currentTimeMillis()
+        val cached = lastHandshake
+        if (cached != null && now - lastHandshakeAt < CACHE_MS) {
+            return cached
+        }
         if (!File(ROOT_SOCKET_PATH).exists()) {
-            return Handshake(false, 0)
+            val result = Handshake(false, 0)
+            lastHandshake = result
+            lastHandshakeAt = now
+            return result
         }
 
         return try {
@@ -83,9 +97,15 @@ object RootModuleStatus {
             val pong = input.readLine() ?: ""
             socket.close()
 
-            parseHandshake(hello, pong)
+            parseHandshake(hello, pong).also {
+                lastHandshake = it
+                lastHandshakeAt = now
+            }
         } catch (_: Exception) {
-            Handshake(false, 0)
+            Handshake(false, 0).also {
+                lastHandshake = it
+                lastHandshakeAt = now
+            }
         }
     }
 }

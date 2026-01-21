@@ -16,6 +16,12 @@ type AppStatus = {
   }>;
 };
 
+type DeviceForm = {
+  name: string;
+  transport: string;
+  status: string;
+};
+
 const fallbackStatus: AppStatus = {
   protocolVersion: 4,
   driver: { installed: false, active: false },
@@ -24,8 +30,26 @@ const fallbackStatus: AppStatus = {
   devices: [],
 };
 
+const initialForm: DeviceForm = {
+  name: "",
+  transport: "USB",
+  status: "Paired",
+};
+
+const createId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `device-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+};
+
 export default function HomePage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
+  const [devices, setDevices] = useState<AppStatus["devices"]>(fallbackStatus.devices);
+  const [pairingOpen, setPairingOpen] = useState(false);
+  const [form, setForm] = useState<DeviceForm>(initialForm);
+  const [error, setError] = useState<string | null>(null);
+  const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,10 +60,12 @@ export default function HomePage() {
         const data = await invoke<AppStatus>("app_status");
         if (!cancelled) {
           setStatus(data);
+          setDevices(data.devices ?? []);
         }
       } catch (_error) {
         if (!cancelled) {
           setStatus(fallbackStatus);
+          setDevices(fallbackStatus.devices);
         }
       }
     };
@@ -49,6 +75,100 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  const invokeTauri = async <T,>(command: string, args?: Record<string, unknown>) => {
+    const { invoke } = await import("@tauri-apps/api/tauri");
+    return invoke<T>(command, args);
+  };
+
+  const refreshDevices = async () => {
+    try {
+      const list = await invokeTauri<AppStatus["devices"]>("list_devices");
+      setDevices(list ?? []);
+      setError(null);
+    } catch (err) {
+      setError("Unable to refresh devices.");
+      console.error(err);
+    }
+  };
+
+  const handlePairSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.name.trim()) {
+      setError("Device name is required.");
+      return;
+    }
+
+    try {
+      const device = {
+        id: createId(),
+        name: form.name.trim(),
+        transport: form.transport,
+        status: form.status.trim() || "Paired",
+        lastSeen: "Just now",
+      };
+      const list = await invokeTauri<AppStatus["devices"]>("upsert_device", { device });
+      setDevices(list ?? []);
+      setForm(initialForm);
+      setPairingOpen(false);
+      setError(null);
+    } catch (err) {
+      setError("Unable to save device.");
+      console.error(err);
+    }
+  };
+
+  const handleEditOpen = (device: AppStatus["devices"][number]) => {
+    setForm({
+      name: device.name,
+      transport: device.transport,
+      status: device.status,
+    });
+    setEditingDeviceId(device.id);
+    setPairingOpen(true);
+    setError(null);
+  };
+
+  const handleEditSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingDeviceId) {
+      return;
+    }
+    if (!form.name.trim()) {
+      setError("Device name is required.");
+      return;
+    }
+
+    try {
+      const device = {
+        id: editingDeviceId,
+        name: form.name.trim(),
+        transport: form.transport,
+        status: form.status.trim() || "Paired",
+        lastSeen: "Just now",
+      };
+      const list = await invokeTauri<AppStatus["devices"]>("upsert_device", { device });
+      setDevices(list ?? []);
+      setForm(initialForm);
+      setEditingDeviceId(null);
+      setPairingOpen(false);
+      setError(null);
+    } catch (err) {
+      setError("Unable to update device.");
+      console.error(err);
+    }
+  };
+
+  const handleRemove = async (deviceId: string) => {
+    try {
+      const list = await invokeTauri<AppStatus["devices"]>("remove_device", { deviceId });
+      setDevices(list ?? []);
+      setError(null);
+    } catch (err) {
+      setError("Unable to remove device.");
+      console.error(err);
+    }
+  };
 
   const driverChip = status.driver.installed
     ? status.driver.active
@@ -82,7 +202,18 @@ export default function HomePage() {
           </p>
           <div className="hero-actions">
             <button className="primary-button" type="button">Start Session</button>
-            <button className="secondary-button" type="button">Pair Device</button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => {
+                setPairingOpen((open) => !open);
+                setEditingDeviceId(null);
+                setForm(initialForm);
+                setError(null);
+              }}
+            >
+              Pair Device
+            </button>
           </div>
         </section>
 
@@ -137,16 +268,18 @@ export default function HomePage() {
             <div className="card-subtitle">Select a display profile</div>
           </div>
           <div className="device-list">
-            {status.devices.length === 0 ? (
+            {devices.length === 0 ? (
               <div className="device-row muted">
                 <div>
                   <div className="device-name">No paired devices yet</div>
                   <div className="device-meta">Use Pair Device to add one.</div>
                 </div>
-                <button className="pill-button" type="button">Pair</button>
+                <button className="pill-button" type="button" onClick={() => setPairingOpen(true)}>
+                  Pair
+                </button>
               </div>
             ) : (
-              status.devices.map((device) => (
+              devices.map((device) => (
                 <div className="device-row" key={device.id}>
                   <div>
                     <div className="device-name">{device.name}</div>
@@ -155,15 +288,88 @@ export default function HomePage() {
                       {device.lastSeen ? ` - ${device.lastSeen}` : ""}
                     </div>
                   </div>
-                  <button className="pill-button" type="button">Connect</button>
+                  <div className="device-actions">
+                    <button className="pill-button" type="button">Connect</button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => handleEditOpen(device)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => handleRemove(device.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               ))
             )}
           </div>
+          {pairingOpen && (
+            <form
+              className="pair-form"
+              onSubmit={editingDeviceId ? handleEditSubmit : handlePairSubmit}
+            >
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-label">Device Name</span>
+                  <input
+                    className="form-input"
+                    value={form.name}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    placeholder="Galaxy Tab S8"
+                    required
+                  />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">Transport</span>
+                  <select
+                    className="form-input"
+                    value={form.transport}
+                    onChange={(event) => setForm({ ...form, transport: event.target.value })}
+                  >
+                    <option value="USB">USB</option>
+                    <option value="Wi-Fi">Wi-Fi</option>
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span className="form-label">Status</span>
+                  <input
+                    className="form-input"
+                    value={form.status}
+                    onChange={(event) => setForm({ ...form, status: event.target.value })}
+                    placeholder="Paired"
+                  />
+                </label>
+              </div>
+              {error && <div className="form-error">{error}</div>}
+              <div className="form-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => {
+                    setPairingOpen(false);
+                    setEditingDeviceId(null);
+                    setForm(initialForm);
+                    setError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="primary-button" type="submit">
+                  {editingDeviceId ? "Update Device" : "Save Device"}
+                </button>
+              </div>
+            </form>
+          )}
           <div className="divider" />
           <div className="connect-actions">
             <button className="secondary-button" type="button">Add Virtual Display</button>
-            <button className="ghost-button" type="button">View Logs</button>
+            <button className="ghost-button" type="button" onClick={refreshDevices}>View Logs</button>
           </div>
         </section>
 

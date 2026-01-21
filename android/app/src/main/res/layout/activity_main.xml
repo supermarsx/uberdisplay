@@ -89,4 +89,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
+    <TextView
+        android:id="@+id/sonarPenStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/sonarpen_status_unknown"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        app:layout_constraintTop_toBottomOf="@id/rootStatus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

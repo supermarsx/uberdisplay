@@ -26,4 +26,11 @@ class RootModuleStatusTest {
         assertTrue(handshake.ok)
         assertEquals(0L, handshake.caps)
     }
+
+    @Test
+    fun cachedHandshakeReturned() {
+        val first = RootModuleStatus.checkHandshakeCaps()
+        val second = RootModuleStatus.checkHandshakeCaps()
+        assertEquals(first.caps, second.caps)
+    }
 }

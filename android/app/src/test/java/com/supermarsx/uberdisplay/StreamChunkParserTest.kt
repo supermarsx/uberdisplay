@@ -2,6 +2,7 @@ package com.supermarsx.uberdisplay
 
 import com.supermarsx.uberdisplay.protocol.ProtocolDataTypes
 import com.supermarsx.uberdisplay.protocol.StreamChunkParser
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -35,5 +36,35 @@ class StreamChunkParserTest {
         framed.put(packetB)
 
         StreamChunkParser().appendChunk(1, framed.array())
+    }
+
+    @Test
+    fun enqueuesFrameDoneAfterFrame() {
+        val configure = ByteBuffer.allocate(1 + 12).order(ByteOrder.LITTLE_ENDIAN)
+        configure.put(ProtocolDataTypes.CONFIGURE.toByte())
+        configure.putInt(800)
+        configure.putInt(600)
+        configure.putInt(5)
+
+        val frame = byteArrayOf(ProtocolDataTypes.FRAME.toByte(), 0, 1)
+
+        val framed = ByteBuffer.allocate(4 + configure.array().size + 4 + frame.size)
+            .order(ByteOrder.LITTLE_ENDIAN)
+        framed.putInt(configure.array().size)
+        framed.put(configure.array())
+        framed.putInt(frame.size)
+        framed.put(frame)
+
+        val queue = com.supermarsx.uberdisplay.transport.TransportOutbox.tcpQueue
+        queue.drain()
+        StreamChunkParser().appendChunk(0, framed.array())
+        val after = queue.size()
+        assertTrue(after >= 1)
+    }
+
+    @Test
+    fun toleratesIncompleteChunk() {
+        val parser = StreamChunkParser()
+        parser.appendChunk(0, byteArrayOf(0, 0, 0))
     }
 }

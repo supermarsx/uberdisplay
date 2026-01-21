@@ -56,6 +56,8 @@
     <string name="settings_category_status">Status</string>
     <string name="status_color_legend_title">Connection status colors</string>
     <string name="status_color_legend_summary">Idle: gray, Waiting: amber, Connected: green, Error: red.</string>
+    <string name="settings_category_action_menu">Action Menu</string>
+    <string name="action_menu_send_config_summary">Send the first menu item as InputConfig.</string>
     <string name="settings_category_connection">Connection</string>
     <string name="connection_mode_title">Preferred connection mode</string>
     <string name="connection_mode_label_tcp">Mode: TCP (Wi-Fi)</string>

@@ -188,6 +188,8 @@
 - [x] Add host settings model (codec, bitrate, resolution, refresh cap)
 - [x] Add device registry storage + persistence for paired Android devices
 - [x] Add device registry CRUD commands (add/update/remove) exposed via Tauri
+- [x] Wire device registry CRUD into the PC UI (pair/remove)
+- [x] Add device edit UI (rename/status/transport)
 - [x] Add Windows driver probe stub + UI status surface
 - [x] Implement Windows driver detection (virtual display enumeration) + active display query
 - [x] Add action menu quick buttons in MirrorActivity
@@ -204,6 +206,20 @@
 - [x] Add test for ActionMenuRepository max items
 - [x] Add transport summary line in MainActivity
 - [x] Expand Touch packet writer to include points per spec
-- [ ] Expand Pen packet writer to spec fields
-- [ ] Build Pen packet from MotionEvent axes
-- [ ] Add Pen writer tests
+- [x] Expand Pen packet writer to spec fields
+- [x] Build Pen packet from MotionEvent axes
+- [x] Add Pen writer tests
+- [x] Add multi-point Touch writer test
+- [x] Send FrameDone after receiving Frame when encoderId known
+- [x] Add StreamChunkParser test for FrameDone enqueue
+- [x] Add periodic transport summary refresh in MainActivity
+- [x] Add periodic TCP status refresh in MirrorActivity
+- [x] Add TcpPacketLoop incomplete chunk test (parser level)
+- [x] Add Pen writer flag byte test
+- [x] Add SonarPen status label in MainActivity
+- [x] Clamp touch size normalization
+- [x] Add action menu config send in settings
+- [x] Add action menu config send toast when empty
+- [x] Show root caps in MainActivity status
+- [x] Add RootModuleStatus handshake caching
+- [x] Add RootModuleStatus cache test

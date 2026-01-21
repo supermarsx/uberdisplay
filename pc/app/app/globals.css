@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Libre+Baskerville:wght@400;700&family=Parisienne&display=swap');
-
 :root {
   color-scheme: dark;
   --ink-900: #12110f;
@@ -317,6 +315,12 @@ body {
   color: var(--text-muted);
 }
 
+.device-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .pill-button {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.18);
@@ -325,6 +329,62 @@ body {
 
 .pill-button:hover {
   transform: translateY(-1px);
+}
+
+.pair-form {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 12, 10, 0.6);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.form-label {
+  font-size: 11px;
+}
+
+.form-input {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: rgba(242, 235, 216, 0.6);
+  box-shadow: 0 0 0 2px rgba(242, 235, 216, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.form-error {
+  margin-top: 12px;
+  color: #e0b8a8;
+  font-size: 12px;
 }
 
 .divider {
@@ -399,6 +459,18 @@ body {
 
   .settings-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .device-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .device-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }
 

@@ -75,7 +75,7 @@ class InputSenderStub : InputSender {
             }
             val x = normalize(event.getX(i), viewWidth)
             val y = normalize(event.getY(i), viewHeight)
-            val size = (event.getSize(i) * 32767).toInt()
+            val size = (event.getSize(i).coerceIn(0f, 1f) * 32767).toInt()
             Packet.TouchPoint(
                 pointerId = event.getPointerId(i),
                 down = down,

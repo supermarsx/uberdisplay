@@ -14,10 +14,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import com.supermarsx.uberdisplay.sonarpen.SonarPenStatus
 
 class MainActivity : AppCompatActivity() {
     private lateinit var rootToggle: SwitchMaterial
     private lateinit var rootStatus: TextView
+    private lateinit var sonarPenStatus: TextView
     private lateinit var statusChip: Chip
     private lateinit var settingsButton: Button
     private lateinit var connectButton: Button
@@ -39,6 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         rootToggle = findViewById(R.id.rootToggle)
         rootStatus = findViewById(R.id.rootStatus)
+        sonarPenStatus = findViewById(R.id.sonarPenStatus)
         statusChip = findViewById(R.id.statusChip)
         settingsButton = findViewById(R.id.settingsButton)
         connectButton = findViewById(R.id.connectButton)
@@ -58,6 +63,8 @@ class MainActivity : AppCompatActivity() {
 
         updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
         updateTransportSummary()
+        updateSonarPenStatus()
+        startTransportTicker()
 
         settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -84,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         prefs.registerOnSharedPreferenceChangeListener(prefListener)
         updateConnectionModeLabel(prefs.getString("connection_mode", "tcp") ?: "tcp")
         updateTransportSummary()
+        updateSonarPenStatus()
     }
 
     override fun onPause() {
@@ -110,19 +118,24 @@ class MainActivity : AppCompatActivity() {
         rootStatus.setText(R.string.root_module_status_checking)
         Thread {
             val status = RootModuleStatus.checkStatus()
+            val handshake = RootModuleStatus.checkHandshakeCaps()
             runOnUiThread {
                 if (!rootToggle.isChecked) {
                     rootStatus.setText(R.string.root_module_status_disabled)
                     return@runOnUiThread
                 }
-                when (status) {
-                    RootModuleStatus.Status.HANDSHAKE_OK ->
-                        rootStatus.setText(R.string.root_module_status_detected)
-                    RootModuleStatus.Status.NOT_DETECTED ->
-                        rootStatus.setText(R.string.root_module_status_not_detected)
-                    RootModuleStatus.Status.UNREACHABLE ->
-                        rootStatus.setText(R.string.root_module_status_unreachable)
-                }
+                rootStatus.setText(
+                    when (status) {
+                        RootModuleStatus.Status.HANDSHAKE_OK -> {
+                            val capsHex = "0x" + handshake.caps.toString(16).padStart(8, '0')
+                            getString(R.string.root_module_status_detected_with_caps, capsHex)
+                        }
+                        RootModuleStatus.Status.NOT_DETECTED ->
+                            getString(R.string.root_module_status_not_detected)
+                        RootModuleStatus.Status.UNREACHABLE ->
+                            getString(R.string.root_module_status_unreachable)
+                    }
+                )
             }
         }.start()
     }
@@ -173,6 +186,25 @@ class MainActivity : AppCompatActivity() {
             inPackets,
             outPackets
         )
+    }
+
+    private fun updateSonarPenStatus() {
+        sonarPenStatus.text = when (SonarPenStatus.currentStatus(this)) {
+            SonarPenStatus.Status.UNKNOWN -> getString(R.string.sonarpen_status_unknown)
+            SonarPenStatus.Status.NOT_ENABLED -> getString(R.string.sonarpen_permission_needed)
+            SonarPenStatus.Status.READY -> getString(R.string.sonarpen_permission_granted)
+        }
+    }
+
+    private fun startTransportTicker() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    updateTransportSummary()
+                    delay(1000)
+                }
+            }
+        }
     }
 }
 }
