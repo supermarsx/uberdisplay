@@ -3,13 +3,14 @@
 mod app_state;
 mod device_registry;
 mod driver_probe;
+mod transport_probe;
 mod protocol;
 
 #[tauri::command]
 fn app_status(app_handle: tauri::AppHandle) -> app_state::AppStatus {
-    // TODO: Populate status from transport and driver probes.
     let mut status = app_state::AppStatus::default();
     status.driver = driver_probe::probe_driver_status();
+    status.transport = transport_probe::probe_transport_status();
     status.devices = device_registry::load_devices(&app_handle);
     status
 }
