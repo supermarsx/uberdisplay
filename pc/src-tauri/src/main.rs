@@ -8,6 +8,7 @@ mod driver_probe;
 mod host_log;
 mod host_transport;
 mod session;
+mod session_state;
 mod transport_probe;
 mod settings_registry;
 mod protocol;
@@ -150,6 +151,9 @@ fn prepare_session(
         client_codec_mask,
         preferred_codec: preferred,
     })?;
+    if let Some(codec_id) = codec::codec_id_from_name(&result.selection.codec_name) {
+        session_state::update_codec(codec_id);
+    }
     let _ = host_log::append_log(
         &app_handle,
         format!("Prepared session codec {}", result.selection.codec_name),
@@ -189,6 +193,9 @@ fn tcp_connect_and_configure(
         client_codec_mask,
         preferred_codec: preferred,
     })?;
+    if let Some(codec_id) = codec::codec_id_from_name(&result.selection.codec_name) {
+        session_state::update_codec(codec_id);
+    }
     host_transport::send_framed_packet(&result.configure_bytes)?;
     Ok(result.selection)
 }
@@ -204,6 +211,14 @@ fn tcp_poll_status() -> (Option<u32>, Option<i32>) {
         host_transport::take_last_client_codec_mask(),
         host_transport::take_last_frame_done(),
     )
+}
+
+#[tauri::command]
+fn session_state_snapshot() -> (Option<u8>, Option<String>) {
+    let snapshot = session_state::snapshot();
+    let codec_id = snapshot.codec_id.map(|codec| codec as u8);
+    let backend = snapshot.encoder_backend.map(|backend| format!("{backend:?}"));
+    (codec_id, backend)
 }
 
 #[tauri::command]
@@ -236,6 +251,7 @@ fn main() {
             tcp_connect_and_configure,
             tcp_disconnect,
             tcp_poll_status,
+            session_state_snapshot,
             add_virtual_display,
             record_action
         ])
