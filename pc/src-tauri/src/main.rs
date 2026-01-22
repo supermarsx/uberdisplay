@@ -5,6 +5,7 @@ mod diagnostics_report;
 mod codec;
 mod capture;
 mod display_probe;
+mod driver_manager;
 mod driver_ipc;
 mod linux_vdd;
 mod encoder;
@@ -141,6 +142,47 @@ fn list_virtual_displays() -> Vec<app_state::DisplayInfo> {
         .collect()
 }
 
+#[tauri::command]
+fn virtual_driver_status(app_handle: tauri::AppHandle) -> Result<driver_manager::DriverManagerStatus, String> {
+    driver_manager::status().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver manager status failed: {err}"));
+        err
+    })
+}
+
+#[tauri::command]
+fn virtual_driver_action(app_handle: tauri::AppHandle, action: String) -> Result<(), String> {
+    driver_manager::action(&action).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver manager action failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, format!("Driver manager action: {action}"));
+    Ok(())
+}
+
+#[tauri::command]
+fn set_virtual_display_count(app_handle: tauri::AppHandle, count: u32) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        driver_ipc::set_display_count(count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {count} virtual displays"));
+        return Ok(());
+    }
+    #[cfg(target_os = "linux")]
+    {
+        linux_vdd::ensure_display_count(count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Linux VDD set display count failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {count} virtual displays"));
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err("Virtual display management not supported on this platform.".to_string())
+}
 #[tauri::command]
 fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
     display_probe::list_display_modes(&display_id)
@@ -451,6 +493,9 @@ fn main() {
             list_displays,
             list_virtual_displays,
             list_display_modes,
+            virtual_driver_status,
+            virtual_driver_action,
+            set_virtual_display_count,
             create_virtual_display,
             remove_virtual_display,
             set_session_display_target,
