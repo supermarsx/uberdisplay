@@ -67,6 +67,11 @@ pub struct InputKeyPacket {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct FrameDonePacket {
+    pub encoder_id: i32,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct CapabilitiesPacket {
     pub codec_mask: u32,
     pub flags: u32,
@@ -78,6 +83,7 @@ pub enum ClientPacket {
     Pen(PenPacket),
     Keyboard(KeyboardPacket),
     InputKey(InputKeyPacket),
+    FrameDone(FrameDonePacket),
     Capabilities(CapabilitiesPacket),
 }
 
@@ -129,6 +135,7 @@ pub fn parse_client_packet(bytes: &[u8]) -> Result<ClientPacket, PacketError> {
         9 => parse_pen_packet(payload).map(ClientPacket::Pen),
         13 => parse_input_key_packet(payload).map(ClientPacket::InputKey),
         15 => parse_keyboard_packet(payload).map(ClientPacket::Keyboard),
+        4 => parse_frame_done_packet(payload).map(ClientPacket::FrameDone),
         17 => parse_capabilities_packet(payload).map(ClientPacket::Capabilities),
         other => Err(PacketError::UnsupportedDataType(*other)),
     }
@@ -190,6 +197,16 @@ fn parse_input_key_packet(payload: &[u8]) -> Result<InputKeyPacket, PacketError>
         down: payload[0] != 0,
         button_index: payload[1],
         action: i32::from_le_bytes([payload[2], payload[3], payload[4], payload[5]]),
+    })
+}
+
+fn parse_frame_done_packet(payload: &[u8]) -> Result<FrameDonePacket, PacketError> {
+    if payload.len() != 4 {
+        return Err(PacketError::PayloadTooShort);
+    }
+
+    Ok(FrameDonePacket {
+        encoder_id: i32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]]),
     })
 }
 
@@ -312,6 +329,17 @@ mod tests {
                 button_index: 2,
                 action: 9,
             })
+        );
+    }
+
+    #[test]
+    fn parses_frame_done_packet() {
+        let payload = [7u8, 0, 0, 0];
+        let packet = parse_client_packet(&[4u8].iter().chain(payload.iter()).copied().collect::<Vec<_>>()).unwrap();
+
+        assert_eq!(
+            packet,
+            ClientPacket::FrameDone(FrameDonePacket { encoder_id: 7 })
         );
     }
 

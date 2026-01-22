@@ -199,6 +199,14 @@ fn tcp_disconnect() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn tcp_poll_status() -> (Option<u32>, Option<i32>) {
+    (
+        host_transport::take_last_client_codec_mask(),
+        host_transport::take_last_frame_done(),
+    )
+}
+
+#[tauri::command]
 fn add_virtual_display(app_handle: tauri::AppHandle) -> Result<(), String> {
     let _ = host_log::append_log(&app_handle, "Add virtual display requested");
     Ok(())
@@ -227,6 +235,7 @@ fn main() {
             prepare_session,
             tcp_connect_and_configure,
             tcp_disconnect,
+            tcp_poll_status,
             add_virtual_display,
             record_action
         ])
