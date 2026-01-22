@@ -45,6 +45,7 @@ export default function PreferencesPage() {
   const [virtualDisplays, setVirtualDisplays] = useState<DisplayInfo[]>([]);
   const [displayTarget, setDisplayTarget] = useState("auto");
   const [virtualDisplayLabel, setVirtualDisplayLabel] = useState("UberDisplay");
+  const [virtualDisplayCount, setVirtualDisplayCount] = useState(1);
   const [inputControls, setInputControls] = useState({
     enableInput: true,
     captureOnConnect: true,
@@ -91,6 +92,7 @@ export default function PreferencesPage() {
         const data = await invoke<DisplayInfo[]>("list_virtual_displays");
         if (!cancelled) {
           setVirtualDisplays(data ?? []);
+          setVirtualDisplayCount(Math.max(1, data.length || 1));
         }
       } catch (_error) {
         if (!cancelled) {
@@ -166,6 +168,17 @@ export default function PreferencesPage() {
       pushToast("Virtual display removal requested.", "success");
     } catch (err) {
       pushToast("Unable to remove virtual display.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleSetVirtualDisplayCount = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("set_virtual_display_count", { count: virtualDisplayCount });
+      pushToast(`Virtual display count set to ${virtualDisplayCount}.`, "success");
+    } catch (err) {
+      pushToast("Unable to update virtual display count.", "error");
       console.error(err);
     }
   };
@@ -469,8 +482,20 @@ export default function PreferencesPage() {
                 onChange={(event) => setVirtualDisplayLabel(event.target.value)}
               />
             </label>
+            <label className="form-field">
+              <span className="form-label">Display Count</span>
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                max={12}
+                value={virtualDisplayCount}
+                onChange={(event) => setVirtualDisplayCount(Number(event.target.value))}
+              />
+            </label>
             <div className="form-actions">
               <button className="secondary-button" type="button" onClick={handleCreateVirtualDisplay}>Create</button>
+              <button className="secondary-button" type="button" onClick={handleSetVirtualDisplayCount}>Apply Count</button>
             </div>
           </div>
           <div className="device-list">

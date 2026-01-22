@@ -6,13 +6,13 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Mutex, OnceLock};
 
 #[cfg(target_os = "linux")]
-const DISPLAY_BASE: u32 = 99;
-#[cfg(target_os = "linux")]
 const DEFAULT_WIDTH: u32 = 2560;
 #[cfg(target_os = "linux")]
 const DEFAULT_HEIGHT: u32 = 1600;
 #[cfg(target_os = "linux")]
 const DEFAULT_DEPTH: u32 = 24;
+#[cfg(target_os = "linux")]
+const DEFAULT_BASE: u32 = 99;
 
 #[cfg(target_os = "linux")]
 struct LinuxDisplayState {
@@ -20,6 +20,7 @@ struct LinuxDisplayState {
     width: u32,
     height: u32,
     depth: u32,
+    base_display: u32,
 }
 
 #[cfg(target_os = "linux")]
@@ -33,6 +34,7 @@ fn state() -> &'static Mutex<LinuxDisplayState> {
             width: DEFAULT_WIDTH,
             height: DEFAULT_HEIGHT,
             depth: DEFAULT_DEPTH,
+            base_display: DEFAULT_BASE,
         })
     })
 }
@@ -59,6 +61,23 @@ pub fn current_count() -> u32 {
 }
 
 #[cfg(target_os = "linux")]
+pub fn set_config(base_display: u32, width: u32, height: u32, depth: u32) -> Result<(), String> {
+    let mut guard = state().lock().map_err(|_| "Display state lock poisoned".to_string())?;
+    guard.base_display = base_display;
+    guard.width = width;
+    guard.height = height;
+    guard.depth = depth;
+    if !guard.displays.is_empty() {
+        let count = guard.displays.len() as u32;
+        stop_all_locked(&mut guard)?;
+        while guard.displays.len() < count as usize {
+            start_display_locked(&mut guard)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
 fn ensure_xvfb_available() -> Result<(), String> {
     Command::new("Xvfb")
         .arg("-help")
@@ -71,7 +90,7 @@ fn ensure_xvfb_available() -> Result<(), String> {
 
 #[cfg(target_os = "linux")]
 fn start_display_locked(state: &mut LinuxDisplayState) -> Result<(), String> {
-    let display_num = next_display_number(&state.displays);
+    let display_num = next_display_number(state.base_display, &state.displays);
     let screen_spec = format!("{}x{}x{}", state.width, state.height, state.depth);
     let child = Command::new("Xvfb")
         .arg(format!(":{}", display_num))
@@ -105,8 +124,20 @@ fn stop_display_locked(state: &mut LinuxDisplayState) -> Result<(), String> {
 }
 
 #[cfg(target_os = "linux")]
-fn next_display_number(existing: &BTreeMap<u32, Child>) -> u32 {
-    let mut candidate = DISPLAY_BASE;
+fn stop_all_locked(state: &mut LinuxDisplayState) -> Result<(), String> {
+    let keys: Vec<u32> = state.displays.keys().copied().collect();
+    for display_num in keys.into_iter().rev() {
+        if let Some(mut child) = state.displays.remove(&display_num) {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn next_display_number(base: u32, existing: &BTreeMap<u32, Child>) -> u32 {
+    let mut candidate = base;
     for key in existing.keys() {
         if *key == candidate {
             candidate += 1;

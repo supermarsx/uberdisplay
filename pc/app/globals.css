@@ -39,8 +39,9 @@ body {
 
 .toast-stack {
   position: fixed;
-  top: 18px;
-  right: 18px;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   gap: 10px;
