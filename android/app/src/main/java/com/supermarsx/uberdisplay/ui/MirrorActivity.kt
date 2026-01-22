@@ -11,6 +11,9 @@ import android.view.KeyEvent
 import android.widget.Button
 import android.widget.Toast
 import android.content.Intent
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import android.view.TextureView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -45,6 +48,54 @@ class MirrorActivity : AppCompatActivity() {
 
         root.setOnTouchListener(TouchInputHandler(inputSender))
         root.setOnGenericMotionListener(PenInputHandler(inputSender))
+
+        val surfaceView = findViewById<SurfaceView>(R.id.mirrorSurface)
+        val textureView = findViewById<TextureView>(R.id.mirrorTexture)
+        surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
+            override fun surfaceCreated(holder: SurfaceHolder) {
+                AppServices.decoderController.setSurface(holder.surface)
+                textureView.visibility = android.view.View.GONE
+            }
+
+            override fun surfaceChanged(
+                holder: SurfaceHolder,
+                format: Int,
+                width: Int,
+                height: Int
+            ) {
+                AppServices.decoderController.setSurface(holder.surface)
+            }
+
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
+                AppServices.decoderController.setSurface(null)
+            }
+        })
+
+        if (!surfaceView.holder.surface.isValid) {
+            textureView.visibility = android.view.View.VISIBLE
+            textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                override fun onSurfaceTextureAvailable(
+                    surface: android.graphics.SurfaceTexture,
+                    width: Int,
+                    height: Int
+                ) {
+                    AppServices.decoderController.setSurface(android.view.Surface(surface))
+                }
+
+                override fun onSurfaceTextureSizeChanged(
+                    surface: android.graphics.SurfaceTexture,
+                    width: Int,
+                    height: Int
+                ) = Unit
+
+                override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
+                    AppServices.decoderController.setSurface(null)
+                    return true
+                }
+
+                override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) = Unit
+            }
+        }
 
         val actionButton = findViewById<Button>(R.id.actionMenuButton)
         actionButton.setOnClickListener {
@@ -138,11 +189,25 @@ class MirrorActivity : AppCompatActivity() {
         )
     }
 
+    private fun updateDecoderStatus() {
+        val banner = findViewById<android.widget.TextView>(R.id.mirrorInfoBanner)
+        val status = AppServices.decoderController.getStatus()
+        val surfaceLabel = if (status.surfaceBound) "surface" else "pending surface"
+        banner.text = getString(
+            R.string.mirror_info_decoder_status,
+            status.mimeType,
+            status.width,
+            status.height,
+            surfaceLabel
+        )
+    }
+
     private fun startTcpStatusTicker() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (isActive) {
                     updateTcpStatus()
+                    updateDecoderStatus()
                     delay(1000)
                 }
             }

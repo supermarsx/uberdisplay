@@ -1,6 +1,7 @@
 package com.supermarsx.uberdisplay.protocol
 
 import com.supermarsx.uberdisplay.Diagnostics
+import com.supermarsx.uberdisplay.AppServices
 import com.supermarsx.uberdisplay.transport.TransportOutbox
 
 class StreamChunkParser {
@@ -20,8 +21,10 @@ class StreamChunkParser {
                 Diagnostics.logInfo("stream_packet stream=$streamId type=${packet::class.simpleName}")
                 if (packet is Packet.Configure) {
                     lastEncoderId = packet.encoderId
+                    AppServices.decoderController.onConfigure(packet)
                 }
                 if (packet is Packet.Frame) {
+                    AppServices.decoderController.onFrame(packet.data)
                     sendFrameDone()
                 }
             }

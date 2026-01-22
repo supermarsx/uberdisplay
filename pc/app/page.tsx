@@ -17,6 +17,13 @@ type AppStatus = {
   }>;
 };
 
+type CodecSelection = {
+  codecId: number;
+  codecName: string;
+  hostMask: number;
+  clientMask: number;
+};
+
 type DeviceForm = {
   name: string;
   transport: string;
@@ -52,6 +59,22 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [codecSelection, setCodecSelection] = useState<CodecSelection | null>(null);
+  const [tcpForm, setTcpForm] = useState({
+    host: "",
+    port: 1445,
+    width: 2560,
+    height: 1600,
+    hostWidth: 2560,
+    hostHeight: 1600,
+    encoderId: 1,
+    codecs: {
+      h265: true,
+      av1: true,
+      h264: true,
+      vp9: true,
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +229,47 @@ export default function HomePage() {
       setNotice("Virtual display requested.");
     } catch (err) {
       setError("Unable to add virtual display.");
+      console.error(err);
+    }
+  };
+
+  const codecMaskFromForm = () => {
+    let mask = 0;
+    if (tcpForm.codecs.h264) mask |= 1 << 0;
+    if (tcpForm.codecs.h265) mask |= 1 << 1;
+    if (tcpForm.codecs.av1) mask |= 1 << 2;
+    if (tcpForm.codecs.vp9) mask |= 1 << 3;
+    return mask;
+  };
+
+  const handleTcpConnect = async () => {
+    try {
+      const selection = await invokeTauri<CodecSelection>("tcp_connect_and_configure", {
+        host: tcpForm.host.trim(),
+        port: tcpForm.port,
+        width: tcpForm.width,
+        height: tcpForm.height,
+        hostWidth: tcpForm.hostWidth,
+        hostHeight: tcpForm.hostHeight,
+        encoderId: tcpForm.encoderId,
+        clientCodecMask: codecMaskFromForm(),
+      });
+      setCodecSelection(selection);
+      setNotice(`TCP connected. Selected codec: ${selection.codecName}.`);
+      setError(null);
+    } catch (err) {
+      setError("Unable to connect via TCP.");
+      console.error(err);
+    }
+  };
+
+  const handleTcpDisconnect = async () => {
+    try {
+      await invokeTauri("tcp_disconnect");
+      setNotice("TCP disconnected.");
+      setError(null);
+    } catch (err) {
+      setError("Unable to disconnect TCP.");
       console.error(err);
     }
   };
@@ -420,6 +484,161 @@ export default function HomePage() {
                 </button>
               </div>
             </form>
+          )}
+          <div className="divider" />
+          <div className="card-header">
+            <div className="card-title">TCP Session</div>
+            <div className="card-subtitle">Manual connect + configure</div>
+          </div>
+          <form className="pair-form settings-form">
+            <div className="form-grid">
+              <label className="form-field">
+                <span className="form-label">Device IP</span>
+                <input
+                  className="form-input"
+                  value={tcpForm.host}
+                  onChange={(event) => setTcpForm({ ...tcpForm, host: event.target.value })}
+                  placeholder="192.168.1.42"
+                  required
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Port</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.port}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, port: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Width</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.width}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, width: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Height</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.height}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, height: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Host Width</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.hostWidth}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, hostWidth: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Host Height</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.hostHeight}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, hostHeight: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Encoder Id</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={tcpForm.encoderId}
+                  onChange={(event) =>
+                    setTcpForm({ ...tcpForm, encoderId: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <div className="form-field">
+                <span className="form-label">Client Codecs</span>
+                <div className="form-toggle-row">
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.h265}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, h265: event.target.checked },
+                        })
+                      }
+                    />
+                    H.265
+                  </label>
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.av1}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, av1: event.target.checked },
+                        })
+                      }
+                    />
+                    AV1
+                  </label>
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.h264}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, h264: event.target.checked },
+                        })
+                      }
+                    />
+                    H.264
+                  </label>
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.vp9}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, vp9: event.target.checked },
+                        })
+                      }
+                    />
+                    VP9
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={handleTcpDisconnect}>
+                Disconnect
+              </button>
+              <button className="primary-button" type="button" onClick={handleTcpConnect}>
+                Connect + Configure
+              </button>
+            </div>
+          </form>
+          {codecSelection && (
+            <div className="form-note">
+              Negotiated codec: {codecSelection.codecName} (host {codecSelection.hostMask}, client {codecSelection.clientMask})
+            </div>
           )}
           <div className="divider" />
           <div className="connect-actions">

@@ -234,3 +234,13 @@
 - [ ] Implement Android decoder selection via MediaCodec with SurfaceView/TextureView fallback
 - [ ] Add Android codec capability discovery + reporting to host
 - [ ] Add end-to-end session start/stop pipeline (host capture/encode -> transport -> Android decode/render)
+
+## PC Host Implementation (Windows-first)
+- [ ] Add host TCP reader loop for Android `Capabilities` + `FrameDone`
+- [ ] Persist negotiated codec + encoder backend in session state
+- [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
+- [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
+- [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
+- [ ] Emit `Configure` v2 and `Frame` packets over TCP session
+- [ ] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
+- [ ] Add session stop + reconnect handling on socket failure

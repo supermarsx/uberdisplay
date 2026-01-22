@@ -356,6 +356,26 @@ body {
   color: var(--text-muted);
 }
 
+.form-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+.form-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-strong);
+}
+
+.form-toggle input {
+  accent-color: #d7d1be;
+}
+
 .form-label {
   font-size: 11px;
 }

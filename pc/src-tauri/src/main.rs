@@ -6,6 +6,7 @@ mod encoder;
 mod device_registry;
 mod driver_probe;
 mod host_log;
+mod host_transport;
 mod session;
 mod transport_probe;
 mod settings_registry;
@@ -157,6 +158,47 @@ fn prepare_session(
 }
 
 #[tauri::command]
+fn tcp_connect_and_configure(
+    app_handle: tauri::AppHandle,
+    host: String,
+    port: u16,
+    width: i32,
+    height: i32,
+    host_width: i32,
+    host_height: i32,
+    encoder_id: i32,
+    client_codec_mask: u32,
+) -> Result<app_state::CodecSelection, String> {
+    host_transport::connect(&host, port)?;
+
+    let host_caps = protocol::packets::CapabilitiesPacket {
+        codec_mask: codec::host_codec_mask(),
+        flags: 0,
+    };
+    let caps_packet = protocol::packets::build_capabilities_packet(host_caps);
+    host_transport::send_framed_packet(&caps_packet)?;
+
+    let settings = settings_registry::load_settings(&app_handle);
+    let preferred = codec::codec_id_from_name(&settings.codec);
+    let result = session::prepare_session(session::SessionConfig {
+        width,
+        height,
+        host_width,
+        host_height,
+        encoder_id,
+        client_codec_mask,
+        preferred_codec: preferred,
+    })?;
+    host_transport::send_framed_packet(&result.configure_bytes)?;
+    Ok(result.selection)
+}
+
+#[tauri::command]
+fn tcp_disconnect() -> Result<(), String> {
+    host_transport::disconnect()
+}
+
+#[tauri::command]
 fn add_virtual_display(app_handle: tauri::AppHandle) -> Result<(), String> {
     let _ = host_log::append_log(&app_handle, "Add virtual display requested");
     Ok(())
@@ -183,6 +225,8 @@ fn main() {
             export_logs,
             start_session,
             prepare_session,
+            tcp_connect_and_configure,
+            tcp_disconnect,
             add_virtual_display,
             record_action
         ])

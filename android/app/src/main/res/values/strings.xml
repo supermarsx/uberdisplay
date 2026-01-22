@@ -90,6 +90,7 @@
     <string name="session_status_connected">Session: connected</string>
     <string name="session_status_error">Session: error</string>
     <string name="mirror_info_banner">Input is forwarded to the host while connected.</string>
+    <string name="mirror_info_decoder_status">Decoder: %1$s %2$dx%3$d (%4$s)</string>
     <string name="session_pause">Pause Session</string>
     <string name="session_resume">Resume Session</string>
     <string name="tcp_status_placeholder">TCP: 0 (STOPPED)</string>
