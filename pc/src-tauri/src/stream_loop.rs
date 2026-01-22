@@ -25,7 +25,7 @@ pub fn start_streaming(
         return Ok(());
     }
 
-    let encoder = MfEncoder::new(codec_id, 0, 0, bitrate_kbps, fps, keyframe_interval)?;
+    let mut encoder = MfEncoder::new(codec_id, 0, 0, bitrate_kbps, fps, keyframe_interval)?;
 
     thread::spawn(move || {
         let mut awaiting_ack = false;
@@ -39,9 +39,7 @@ pub fn start_streaming(
                         ack_received = true;
                     }
                 }
-                if ack_received || last_send.elapsed().as_millis() as u64 >= max_wait_ms {
-                    awaiting_ack = false;
-                } else {
+                if !(ack_received || last_send.elapsed().as_millis() as u64 >= max_wait_ms) {
                     thread::sleep(Duration::from_millis(4));
                     continue;
                 }

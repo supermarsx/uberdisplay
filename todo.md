@@ -230,7 +230,7 @@
 - [ ] Implement host encoder abstraction with codec priority: H.265 HEVC -> AV1 -> H.264 -> VP9
 - [ ] Wire GPU encoder backends where available (NVENC/AMF/QSV) with Media Foundation fallback on Windows
 - [ ] Implement cross-platform capture + encode pipeline (Windows first, feature-gated for macOS/Linux)
-- [ ] Add transport stream sender for encoded frames + FrameDone handling
+- [x] Add transport stream sender for encoded frames + FrameDone handling
 - [ ] Implement Android decoder selection via MediaCodec with SurfaceView/TextureView fallback
 - [ ] Add Android codec capability discovery + reporting to host
 - [ ] Add end-to-end session start/stop pipeline (host capture/encode -> transport -> Android decode/render)
@@ -241,7 +241,7 @@
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
 - [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
-- [ ] Emit `Configure` v2 and `Frame` packets over TCP session
+- [x] Emit `Configure` v2 and `Frame` packets over TCP session
 - [ ] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
 - [ ] Add session stop + reconnect handling on socket failure
 
@@ -258,7 +258,7 @@
 - [ ] Implement Media Foundation H.265 encoder (if supported)
 - [ ] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
 - [ ] Add DXGI capture surface and GPU-friendly frame upload path
-- [ ] Implement frame pacing loop with backpressure using FrameDone ack
+- [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats
 
@@ -267,7 +267,9 @@
 - [ ] Implement Media Foundation encoder init + output for H.265 (if available)
 - [ ] Map encoder settings (bitrate, fps, keyframe interval) from HostSettings
 - [ ] Replace dummy frame sender with encoded output
- - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks
+- [ ] Add encoded sample timestamps and pacing derived from MF output
+- [ ] Add MF encoder error mapping to session state (init/output failure)
+- [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks
 
 ## Remote Input Controls (PC UI + Host)
 - [x] Add input capture controls (enable/touch/pen/keyboard) to PC session settings
