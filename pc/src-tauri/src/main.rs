@@ -207,6 +207,12 @@ fn tcp_connect_and_configure(
         session_state::update_codec(codec_id);
     }
     host_transport::send_framed_packet(&result.configure_bytes)?;
+    host_transport::set_last_session(
+        host,
+        port,
+        caps_packet.clone(),
+        result.configure_bytes.clone(),
+    );
     let backend = encoder::select_backend(None);
     session_state::update_backend(backend);
     Ok(result.selection)
