@@ -61,7 +61,7 @@ pub fn start_streaming(
                 }
             }
 
-            let payload = encoder.encode_dummy_frame();
+            let (payload, timestamp_100ns) = encoder.encode_frame();
             if let Some(err) = encoder.take_last_error() {
                 mf_failures = mf_failures.saturating_add(1);
                 if mf_failures >= 3 {
@@ -75,6 +75,7 @@ pub fn start_streaming(
             let payload_len = payload.len() as u32;
             let packet = build_frame_packet(FramePacket {
                 frame_meta: 0,
+                timestamp_100ns,
                 h264_bytes: &payload,
             });
             let _ = host_transport::send_framed_packet(&packet);

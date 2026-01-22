@@ -754,10 +754,12 @@ Notes:
 #### `Frame` (Host -> Client)
 Client behavior:
 - Skips **one additional byte** after `data_type` (an extra per-frame header byte).
+- If `frame_meta` bit 7 is set, skips an additional 8-byte timestamp (little-endian, 100ns units).
 - The remainder is passed to the decoder as codec stream bytes indicated by `codecId` from `Configure` (H.264 fallback if absent).
 
 Payload layout (inferred from reads):
 - `frame_meta` (`u8`) — currently unused on client, host-defined.
+- `timestamp_100ns` (`u64`, optional when `frame_meta & 0x80 != 0`)
 - `h264_bytes[...]`
 
 #### `FrameDone` (Client -> Host)

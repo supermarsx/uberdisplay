@@ -26,6 +26,7 @@ pub struct ConfigurePacket {
 #[derive(Debug, PartialEq)]
 pub struct FramePacket<'a> {
     pub frame_meta: u8,
+    pub timestamp_100ns: Option<u64>,
     pub h264_bytes: &'a [u8],
 }
 
@@ -112,9 +113,16 @@ pub fn build_configure_packet(packet: ConfigurePacket) -> Vec<u8> {
 }
 
 pub fn build_frame_packet(packet: FramePacket<'_>) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(2 + packet.h264_bytes.len());
+    let mut buffer = Vec::with_capacity(2 + packet.h264_bytes.len() + 8);
     buffer.push(3);
-    buffer.push(packet.frame_meta);
+    let mut frame_meta = packet.frame_meta;
+    if packet.timestamp_100ns.is_some() {
+        frame_meta |= 0x80;
+    }
+    buffer.push(frame_meta);
+    if let Some(timestamp) = packet.timestamp_100ns {
+        buffer.extend_from_slice(&timestamp.to_le_bytes());
+    }
     buffer.extend_from_slice(packet.h264_bytes);
     buffer
 }
@@ -270,10 +278,28 @@ mod tests {
     fn builds_frame_packet_with_meta() {
         let packet = build_frame_packet(FramePacket {
             frame_meta: 2,
+            timestamp_100ns: None,
             h264_bytes: &[0x01, 0x02],
         });
 
         assert_eq!(packet, vec![3, 2, 0x01, 0x02]);
+    }
+
+    #[test]
+    fn builds_frame_packet_with_timestamp() {
+        let packet = build_frame_packet(FramePacket {
+            frame_meta: 0,
+            timestamp_100ns: Some(42),
+            h264_bytes: &[0xAA],
+        });
+
+        assert_eq!(packet[0], 3);
+        assert_eq!(packet[1] & 0x80, 0x80);
+        assert_eq!(
+            u64::from_le_bytes(packet[2..10].try_into().unwrap()),
+            42
+        );
+        assert_eq!(packet[10], 0xAA);
     }
 
     #[test]

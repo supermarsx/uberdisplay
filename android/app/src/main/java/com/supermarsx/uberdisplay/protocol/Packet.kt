@@ -13,7 +13,7 @@ sealed class Packet {
         val codecLevel: Int = 0,
         val codecFlags: Int = 0
     ) : Packet()
-    data class Frame(val data: ByteArray) : Packet()
+    data class Frame(val data: ByteArray, val timestamp100ns: Long? = null) : Packet()
     data class FrameDone(val encoderId: Int) : Packet()
     data class TouchPoint(
         val pointerId: Int,

@@ -274,6 +274,7 @@
 - [x] Add Media Foundation startup + encoder discovery (H.264/H.265)
 - [x] Add MF encoder activation + type configuration (NV12 -> H.264/H.265)
 - [x] Feed encoder with real NV12 frames (GDI fallback)
+- [x] Add Frame timestamp header (meta flag + 100ns timestamp)
 - [ ] Add encoded sample timestamps and pacing derived from MF output
 - [x] Add MF encoder error mapping to session state (init/output failure)
 - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks

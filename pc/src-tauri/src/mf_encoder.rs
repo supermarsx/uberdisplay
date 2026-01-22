@@ -92,11 +92,11 @@ impl MfEncoder {
         }
     }
 
-    pub fn encode_dummy_frame(&mut self) -> Vec<u8> {
+    pub fn encode_frame(&mut self) -> (Vec<u8>, Option<u64>) {
         #[cfg(windows)]
-        if let Some(payload) = self.encode_mf_frame() {
+        if let Some((payload, timestamp)) = self.encode_mf_frame() {
             if !payload.is_empty() {
-                return payload;
+                return (payload, Some(timestamp));
             }
         }
 
@@ -121,7 +121,8 @@ impl MfEncoder {
         {
             bytes_per_frame = bytes_per_frame.saturating_mul(2).min(768 * 1024);
         }
-        vec![0u8; bytes_per_frame as usize]
+        let timestamp = estimate_timestamp_100ns(self.frame_index, self.fps);
+        (vec![0u8; bytes_per_frame as usize], Some(timestamp))
     }
 }
 
@@ -385,7 +386,7 @@ fn drain_output(transform: &IMFTransform, output_buffer_len: u32) -> Result<Vec<
 
 #[cfg(windows)]
 impl MfEncoder {
-    fn encode_mf_frame(&mut self) -> Option<Vec<u8>> {
+    fn encode_mf_frame(&mut self) -> Option<(Vec<u8>, u64)> {
         let transform = self.transform.as_ref()?;
         let nv12 = capture::capture_nv12(self.width, self.height).ok();
         let buffer = match create_nv12_sample_with_data(self.width, self.height, nv12.as_deref()) {
@@ -406,6 +407,11 @@ impl MfEncoder {
             self.last_error = Some("MF AddBuffer failed".to_string());
             return None;
         }
+        let timestamp = estimate_timestamp_100ns(self.frame_index, self.fps);
+        self.frame_index = self.frame_index.wrapping_add(1);
+        let _ = unsafe { sample.SetSampleTime(timestamp as i64) };
+        let frame_duration = (10_000_000u64 / self.fps.max(1) as u64) as i64;
+        let _ = unsafe { sample.SetSampleDuration(frame_duration) };
         if unsafe { transform.ProcessInput(0, &sample, 0) }.is_err() {
             self.last_error = Some("MF ProcessInput failed".to_string());
             return None;
@@ -415,7 +421,7 @@ impl MfEncoder {
                 if !payload.is_empty() {
                     self.last_error = None;
                 }
-                Some(payload)
+                Some((payload, timestamp))
             }
             Err(err) => {
                 self.last_error = Some(err);
@@ -502,4 +508,9 @@ fn set_attribute_ratio(
             .SetUINT64(key, value)
             .map_err(|err| format!("MF Set ratio failed: 0x{:08x}", err.code().0))
     }
+}
+
+fn estimate_timestamp_100ns(frame_index: u64, fps: u32) -> u64 {
+    let fps = fps.max(1) as u64;
+    frame_index.saturating_mul(10_000_000 / fps)
 }

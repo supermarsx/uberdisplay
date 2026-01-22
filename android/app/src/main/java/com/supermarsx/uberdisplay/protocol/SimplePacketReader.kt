@@ -8,13 +8,28 @@ class SimplePacketReader : PacketReader {
         if (bytes.isEmpty()) return null
         return when (bytes[0].toInt()) {
             ProtocolDataTypes.CONFIGURE -> parseConfigure(bytes)
-            ProtocolDataTypes.FRAME -> Packet.Frame(bytes.drop(2).toByteArray())
+            ProtocolDataTypes.FRAME -> parseFrame(bytes)
             ProtocolDataTypes.STATE -> parseState(bytes)
             ProtocolDataTypes.ERROR -> parseError(bytes)
             ProtocolDataTypes.FRAME_DONE -> parseFrameDone(bytes)
             ProtocolDataTypes.CAPABILITIES -> parseCapabilities(bytes)
             else -> null
         }
+    }
+
+    private fun parseFrame(bytes: ByteArray): Packet? {
+        if (bytes.size < 2) return null
+        val meta = bytes[1].toInt() and 0xFF
+        var offset = 2
+        var timestamp: Long? = null
+        if ((meta and 0x80) != 0) {
+            if (bytes.size < offset + 8) return null
+            val buffer = ByteBuffer.wrap(bytes, offset, 8).order(ByteOrder.LITTLE_ENDIAN)
+            timestamp = buffer.long
+            offset += 8
+        }
+        if (bytes.size <= offset) return Packet.Frame(byteArrayOf(), timestamp)
+        return Packet.Frame(bytes.copyOfRange(offset, bytes.size), timestamp)
     }
 
     private fun parseConfigure(bytes: ByteArray): Packet? {
