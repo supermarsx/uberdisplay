@@ -1,4 +1,6 @@
 use crate::codec::CodecId;
+#[cfg(windows)]
+use crate::capture;
 
 #[cfg(windows)]
 use windows::core::GUID;
@@ -52,14 +54,22 @@ impl MfEncoder {
         fps: u32,
         keyframe_interval: u32,
     ) -> Result<Self, String> {
+        let aligned_width = (width.max(2)) & !1;
+        let aligned_height = (height.max(2)) & !1;
         match codec_id {
             CodecId::H264 | CodecId::H265 => {
                 #[cfg(windows)]
-                let init = init_media_foundation(codec_id, width, height, bitrate_kbps, fps)?;
+                let init = init_media_foundation(
+                    codec_id,
+                    aligned_width,
+                    aligned_height,
+                    bitrate_kbps,
+                    fps,
+                )?;
                 Ok(Self {
                     codec_id,
-                    width,
-                    height,
+                    width: aligned_width,
+                    height: aligned_height,
                     bitrate_kbps,
                     fps,
                     keyframe_interval,
@@ -317,32 +327,6 @@ fn get_output_buffer_len(transform: &IMFTransform) -> u32 {
 }
 
 #[cfg(windows)]
-fn create_nv12_sample(width: i32, height: i32) -> Result<IMFMediaBuffer, String> {
-    let frame_size = (width.max(1) as usize) * (height.max(1) as usize);
-    let buffer_len = frame_size + (frame_size / 2);
-    let buffer = unsafe { MFCreateMemoryBuffer(buffer_len as u32) }
-        .map_err(|err| format!("MFCreateMemoryBuffer failed: 0x{:08x}", err.code().0))?;
-    unsafe {
-        let mut data: *mut u8 = std::ptr::null_mut();
-        let mut max_len = 0u32;
-        let mut current_len = 0u32;
-        buffer
-            .Lock(&mut data, Some(&mut max_len), Some(&mut current_len))
-            .map_err(|err| format!("MF buffer lock failed: 0x{:08x}", err.code().0))?;
-        if !data.is_null() {
-            std::ptr::write_bytes(data, 0u8, buffer_len);
-        }
-        buffer
-            .Unlock()
-            .map_err(|err| format!("MF buffer unlock failed: 0x{:08x}", err.code().0))?;
-        buffer
-            .SetCurrentLength(buffer_len as u32)
-            .map_err(|err| format!("MF buffer length failed: 0x{:08x}", err.code().0))?;
-    }
-    Ok(buffer)
-}
-
-#[cfg(windows)]
 fn drain_output(transform: &IMFTransform, output_buffer_len: u32) -> Result<Vec<u8>, String> {
     let sample = unsafe { MFCreateSample() }
         .map_err(|err| format!("MFCreateSample failed: 0x{:08x}", err.code().0))?;
@@ -403,7 +387,8 @@ fn drain_output(transform: &IMFTransform, output_buffer_len: u32) -> Result<Vec<
 impl MfEncoder {
     fn encode_mf_frame(&mut self) -> Option<Vec<u8>> {
         let transform = self.transform.as_ref()?;
-        let buffer = match create_nv12_sample(self.width, self.height) {
+        let nv12 = capture::capture_nv12(self.width, self.height).ok();
+        let buffer = match create_nv12_sample_with_data(self.width, self.height, nv12.as_deref()) {
             Ok(buffer) => buffer,
             Err(err) => {
                 self.last_error = Some(err);
@@ -449,6 +434,44 @@ impl MfEncoder {
     pub fn take_last_error(&mut self) -> Option<String> {
         None
     }
+}
+
+#[cfg(windows)]
+fn create_nv12_sample_with_data(
+    width: i32,
+    height: i32,
+    data: Option<&[u8]>,
+) -> Result<IMFMediaBuffer, String> {
+    let frame_size = (width.max(1) as usize) * (height.max(1) as usize);
+    let buffer_len = frame_size + (frame_size / 2);
+    let buffer = unsafe { MFCreateMemoryBuffer(buffer_len as u32) }
+        .map_err(|err| format!("MFCreateMemoryBuffer failed: 0x{:08x}", err.code().0))?;
+    unsafe {
+        let mut ptr: *mut u8 = std::ptr::null_mut();
+        let mut max_len = 0u32;
+        let mut current_len = 0u32;
+        buffer
+            .Lock(&mut ptr, Some(&mut max_len), Some(&mut current_len))
+            .map_err(|err| format!("MF buffer lock failed: 0x{:08x}", err.code().0))?;
+        if !ptr.is_null() {
+            if let Some(source) = data {
+                let copy_len = source.len().min(buffer_len);
+                std::ptr::copy_nonoverlapping(source.as_ptr(), ptr, copy_len);
+                if copy_len < buffer_len {
+                    std::ptr::write_bytes(ptr.add(copy_len), 0u8, buffer_len - copy_len);
+                }
+            } else {
+                std::ptr::write_bytes(ptr, 0u8, buffer_len);
+            }
+        }
+        buffer
+            .Unlock()
+            .map_err(|err| format!("MF buffer unlock failed: 0x{:08x}", err.code().0))?;
+        buffer
+            .SetCurrentLength(buffer_len as u32)
+            .map_err(|err| format!("MF buffer length failed: 0x{:08x}", err.code().0))?;
+    }
+    Ok(buffer)
 }
 
 #[cfg(windows)]

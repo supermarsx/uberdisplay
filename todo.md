@@ -243,6 +243,7 @@
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
 - [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
+- [x] Add GDI screen capture fallback to feed NV12 frames
 - [x] Emit `Configure` v2 and `Frame` packets over TCP session
 - [x] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
 - [x] Add session stop on socket failure
@@ -272,6 +273,7 @@
 - [ ] Replace dummy frame sender with encoded output
 - [x] Add Media Foundation startup + encoder discovery (H.264/H.265)
 - [x] Add MF encoder activation + type configuration (NV12 -> H.264/H.265)
+- [x] Feed encoder with real NV12 frames (GDI fallback)
 - [ ] Add encoded sample timestamps and pacing derived from MF output
 - [x] Add MF encoder error mapping to session state (init/output failure)
 - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks

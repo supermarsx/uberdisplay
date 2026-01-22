@@ -2,6 +2,7 @@
 
 mod app_state;
 mod codec;
+mod capture;
 mod encoder;
 mod device_registry;
 mod driver_probe;
