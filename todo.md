@@ -225,8 +225,8 @@
 - [x] Add RootModuleStatus cache test
 
 ## Codec + Streaming Pipeline
-- [ ] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet
-- [ ] Add protocol versioning/migration for codec negotiation in `spec.md`
+- [x] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet
+- [x] Add protocol versioning/migration for codec negotiation in `spec.md`
 - [ ] Implement host encoder abstraction with codec priority: H.265 HEVC -> AV1 -> H.264 -> VP9
 - [ ] Wire GPU encoder backends where available (NVENC/AMF/QSV) with Media Foundation fallback on Windows
 - [ ] Implement cross-platform capture + encode pipeline (Windows first, feature-gated for macOS/Linux)
@@ -236,7 +236,7 @@
 - [ ] Add end-to-end session start/stop pipeline (host capture/encode -> transport -> Android decode/render)
 
 ## PC Host Implementation (Windows-first)
-- [ ] Add host TCP reader loop for Android `Capabilities` + `FrameDone`
+- [x] Add host TCP reader loop for Android `Capabilities` + `FrameDone`
 - [ ] Persist negotiated codec + encoder backend in session state
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
@@ -244,3 +244,9 @@
 - [ ] Emit `Configure` v2 and `Frame` packets over TCP session
 - [ ] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
 - [ ] Add session stop + reconnect handling on socket failure
+
+## Advanced Codec Support (EVC / MPEG-5)
+- [ ] Add encoder backend evaluation for EVC (xeve) and MPEG-5 LCEVC
+- [ ] Define codec profile/level mapping for EVC/LCEVC in Configure v2
+- [ ] Add host-side software fallback stubs for EVC/LCEVC (no-op until real encoder wired)
+- [ ] Update Android decoder capability probing for EVC/LCEVC if MediaCodec exposes support

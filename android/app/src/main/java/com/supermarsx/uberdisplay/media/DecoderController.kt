@@ -54,6 +54,8 @@ class DecoderController {
             CodecConstants.CODEC_ID_H265 -> "video/hevc"
             CodecConstants.CODEC_ID_AV1 -> "video/av01"
             CodecConstants.CODEC_ID_VP9 -> "video/x-vnd.on2.vp9"
+            CodecConstants.CODEC_ID_EVC -> "video/evc"
+            CodecConstants.CODEC_ID_LCEVC -> "video/lcevc"
             CodecConstants.CODEC_ID_H266 -> "video/avc"
             else -> "video/avc"
         }

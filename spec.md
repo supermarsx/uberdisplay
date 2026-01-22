@@ -744,6 +744,8 @@ Codec IDs (host-selected):
 - `3` = AV1
 - `4` = VP9
 - `5` = H.266 (reserved; negotiate only if both sides advertise support)
+- `6` = EVC (MPEG-5 Part 1, e.g., xevd/xeve)
+- `7` = MPEG-5 LCEVC (Part 2)
 
 Notes:
 - If `width == 0`, the client may tear down video output and show a “no video” hint.
@@ -853,12 +855,15 @@ Payload (Little Endian):
   - bit 2: AV1
   - bit 3: VP9
   - bit 4: H.266 (reserved; advertise only if supported)
+  - bit 5: EVC (MPEG-5 Part 1)
+  - bit 6: MPEG-5 LCEVC
 - `flags` (`u32`) — feature flags (vNext, currently 0).
 - Optional fields may be appended in future versions.
 
 Negotiation rule (Windows-first):
 - Host selects codec in priority order: **H.265 HEVC → AV1 → H.264 → VP9** based on the intersection of host + client `codecMask`.
 - Host sends selected `codecId` in `Configure` v2 extension.
+- EVC/LCEVC are optional advanced codecs; only select when explicitly preferred and both sides advertise support.
 
 #### `Unlock` (Reserved)
 UberDisplay does not implement the `Unlock` flow.

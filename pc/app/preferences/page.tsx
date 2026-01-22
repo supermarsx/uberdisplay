@@ -145,6 +145,8 @@ export default function PreferencesPage() {
     "H.266",
     "AV1",
     "VP9",
+    "EVC (xevd/xeve)",
+    "MPEG-5 LCEVC",
   ];
   return (
     <div className="app-shell">

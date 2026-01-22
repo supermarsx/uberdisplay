@@ -5,6 +5,8 @@ pub enum CodecId {
     Av1 = 3,
     Vp9 = 4,
     H266 = 5,
+    Evc = 6,
+    Lcevc = 7,
 }
 
 pub const CODEC_MASK_H264: u32 = 1 << 0;
@@ -12,6 +14,8 @@ pub const CODEC_MASK_H265: u32 = 1 << 1;
 pub const CODEC_MASK_AV1: u32 = 1 << 2;
 pub const CODEC_MASK_VP9: u32 = 1 << 3;
 pub const CODEC_MASK_H266: u32 = 1 << 4;
+pub const CODEC_MASK_EVC: u32 = 1 << 5;
+pub const CODEC_MASK_LCEVC: u32 = 1 << 6;
 
 pub fn codec_id_from_name(name: &str) -> Option<CodecId> {
     match name.trim().to_ascii_lowercase().as_str() {
@@ -20,6 +24,8 @@ pub fn codec_id_from_name(name: &str) -> Option<CodecId> {
         "av1" => Some(CodecId::Av1),
         "vp9" => Some(CodecId::Vp9),
         "h.266" | "h266" => Some(CodecId::H266),
+        "evc" | "xeve" => Some(CodecId::Evc),
+        "mpeg-5" | "mpeg5" | "lcevc" => Some(CodecId::Lcevc),
         _ => None,
     }
 }
@@ -31,6 +37,8 @@ pub fn codec_name(codec_id: CodecId) -> &'static str {
         CodecId::Av1 => "AV1",
         CodecId::Vp9 => "VP9",
         CodecId::H266 => "H.266",
+        CodecId::Evc => "EVC (xevd/xeve)",
+        CodecId::Lcevc => "MPEG-5 LCEVC",
     }
 }
 
@@ -41,13 +49,20 @@ pub fn codec_mask(codec_id: CodecId) -> u32 {
         CodecId::Av1 => CODEC_MASK_AV1,
         CodecId::Vp9 => CODEC_MASK_VP9,
         CodecId::H266 => CODEC_MASK_H266,
+        CodecId::Evc => CODEC_MASK_EVC,
+        CodecId::Lcevc => CODEC_MASK_LCEVC,
     }
 }
 
 pub fn host_codec_mask() -> u32 {
     #[cfg(windows)]
     {
-        CODEC_MASK_H265 | CODEC_MASK_AV1 | CODEC_MASK_H264 | CODEC_MASK_VP9
+        CODEC_MASK_H265
+            | CODEC_MASK_AV1
+            | CODEC_MASK_H264
+            | CODEC_MASK_VP9
+            | CODEC_MASK_EVC
+            | CODEC_MASK_LCEVC
     }
     #[cfg(not(windows))]
     {

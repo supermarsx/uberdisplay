@@ -73,6 +73,8 @@ export default function HomePage() {
       av1: true,
       h264: true,
       vp9: true,
+      evc: false,
+      lcevc: false,
     },
   });
 
@@ -239,6 +241,8 @@ export default function HomePage() {
     if (tcpForm.codecs.h265) mask |= 1 << 1;
     if (tcpForm.codecs.av1) mask |= 1 << 2;
     if (tcpForm.codecs.vp9) mask |= 1 << 3;
+    if (tcpForm.codecs.evc) mask |= 1 << 5;
+    if (tcpForm.codecs.lcevc) mask |= 1 << 6;
     return mask;
   };
 
@@ -622,6 +626,32 @@ export default function HomePage() {
                       }
                     />
                     VP9
+                  </label>
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.evc}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, evc: event.target.checked },
+                        })
+                      }
+                    />
+                    EVC
+                  </label>
+                  <label className="form-toggle">
+                    <input
+                      type="checkbox"
+                      checked={tcpForm.codecs.lcevc}
+                      onChange={(event) =>
+                        setTcpForm({
+                          ...tcpForm,
+                          codecs: { ...tcpForm.codecs, lcevc: event.target.checked },
+                        })
+                      }
+                    />
+                    LCEVC
                   </label>
                 </div>
               </div>

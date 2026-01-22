@@ -23,6 +23,7 @@
 
 * {
   box-sizing: border-box;
+  user-select: none;
 }
 
 body {
@@ -31,7 +32,7 @@ body {
   color: var(--text-strong);
   font-family: var(--font-ui);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .background {
@@ -73,6 +74,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .topbar {
@@ -104,6 +107,12 @@ body {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(230, 222, 201, 0.35) transparent;
 }
 
 .hero {
@@ -465,6 +474,24 @@ body {
   gap: 10px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.content-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+.content-grid::-webkit-scrollbar-thumb {
+  background: rgba(230, 222, 201, 0.35);
+  border-radius: 999px;
+}
+
+.content-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(230, 222, 201, 0.5);
 }
 
 .tab-bar {
