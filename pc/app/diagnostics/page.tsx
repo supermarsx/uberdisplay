@@ -194,12 +194,14 @@ export default function DiagnosticsPage() {
   };
 
   const handleClearLogView = async () => {
-    setLogs([]);
-    setNotice("Event log cleared (view only).");
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
-      await invoke("record_action", { message: "Cleared event log view" });
+      await invoke("clear_logs");
+      setLogs([]);
+      setNotice("Event log cleared.");
+      setError(null);
     } catch (err) {
+      setError("Unable to clear logs.");
       console.error(err);
     }
   };
@@ -306,9 +308,12 @@ export default function DiagnosticsPage() {
         </section>
 
         <section className="card connect-card">
-          <div className="card-header">
-            <div className="card-title">Event Log</div>
-            <div className="card-subtitle">Most recent host events</div>
+          <div className="card-header log-header">
+            <div>
+              <div className="card-title">Event Log</div>
+              <div className="card-subtitle">Most recent host events</div>
+            </div>
+            <div className="log-count">{logs.length}</div>
           </div>
           <div className="device-list log-list">
             {logs.map((entry) => (

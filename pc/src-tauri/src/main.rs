@@ -132,6 +132,34 @@ fn list_displays() -> Vec<app_state::DisplayInfo> {
 }
 
 #[tauri::command]
+fn list_virtual_displays() -> Vec<app_state::DisplayInfo> {
+    display_probe::list_displays()
+        .into_iter()
+        .filter(|display| display.is_virtual)
+        .collect()
+}
+
+#[tauri::command]
+fn create_virtual_display(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
+    let _ = host_log::append_log(&app_handle, format!("Create virtual display requested: {label}"));
+    Ok(())
+}
+
+#[tauri::command]
+fn remove_virtual_display(app_handle: tauri::AppHandle, display_id: String) -> Result<(), String> {
+    let _ = host_log::append_log(&app_handle, format!("Remove virtual display requested: {display_id}"));
+    Ok(())
+}
+
+#[tauri::command]
+fn set_session_display_target(app_handle: tauri::AppHandle, display_id: Option<String>) -> Result<(), String> {
+    session_state::update_display_target(display_id.clone());
+    let label = display_id.unwrap_or_else(|| "Auto".to_string());
+    let _ = host_log::append_log(&app_handle, format!("Display target set: {label}"));
+    Ok(())
+}
+
+#[tauri::command]
 fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
     let path = host_log::export_logs(&app_handle)?;
     let _ = host_log::append_log(&app_handle, "Exported logs");
@@ -364,6 +392,10 @@ fn main() {
             clear_logs,
             export_diagnostics,
             list_displays,
+            list_virtual_displays,
+            create_virtual_display,
+            remove_virtual_display,
+            set_session_display_target,
             start_session,
             prepare_session,
             tcp_connect_and_configure,

@@ -265,10 +265,12 @@
 - [x] Add GDI capture scale-to-stream path when sizes mismatch
 - [x] Add DXGI capture health telemetry (timeouts/failures) to diagnostics
 - [x] Show capture path + scale in diagnostics and home UI
+- [x] Add clear logs command + log count badge in diagnostics
 - [x] Add display inventory probe (physical + virtual outputs)
 
 ## Virtual Display + Multi-Screen
-- [ ] Add virtual display manager commands (create/remove/list modes)
+- [x] Add virtual display manager command stubs (create/remove/list)
+- [ ] Integrate virtual display driver control (create/remove modes via driver IPC)
 - [ ] Add driver install/check hooks for virtual display driver
 - [ ] Add per-session display assignment (virtual/physical/mirror)
 - [ ] Support multiple concurrent sessions with per-display routing

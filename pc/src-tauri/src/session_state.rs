@@ -16,6 +16,7 @@ pub struct SessionState {
     pub codec_id: Option<CodecId>,
     pub encoder_backend: Option<EncoderBackend>,
     pub active_device_id: Option<String>,
+    pub display_target_id: Option<String>,
     pub input_permissions: crate::app_state::InputPermissions,
     pub stats: SessionStats,
     pub lifecycle: SessionLifecycle,
@@ -29,6 +30,7 @@ fn state_store() -> &'static Mutex<SessionState> {
         codec_id: None,
         encoder_backend: None,
         active_device_id: None,
+        display_target_id: None,
         input_permissions: crate::app_state::InputPermissions::default(),
         stats: SessionStats::default(),
         lifecycle: SessionLifecycle::Idle,
@@ -52,6 +54,12 @@ pub fn update_active_device(device_id: Option<String>, permissions: crate::app_s
     if let Ok(mut state) = state_store().lock() {
         state.active_device_id = device_id;
         state.input_permissions = permissions;
+    }
+}
+
+pub fn update_display_target(display_id: Option<String>) {
+    if let Ok(mut state) = state_store().lock() {
+        state.display_target_id = display_id;
     }
 }
 
@@ -118,6 +126,7 @@ pub fn snapshot() -> SessionState {
             codec_id: None,
             encoder_backend: None,
             active_device_id: None,
+            display_target_id: None,
             input_permissions: crate::app_state::InputPermissions::default(),
             stats: SessionStats::default(),
             lifecycle: SessionLifecycle::Idle,
