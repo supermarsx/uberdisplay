@@ -111,7 +111,7 @@ body {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding-right: 6px;
+  padding: 16px 8px;
   scrollbar-width: thin;
   scrollbar-color: rgba(230, 222, 201, 0.35) transparent;
 }
