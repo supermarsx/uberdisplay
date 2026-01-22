@@ -802,7 +802,11 @@ body {
     min-height: auto;
     align-self: stretch;
     height: auto;
-    grid-auto-rows: min-content;
+  }
+
+  .content-grid {
+    align-items: start;
+    grid-auto-rows: max-content;
   }
 }
 
