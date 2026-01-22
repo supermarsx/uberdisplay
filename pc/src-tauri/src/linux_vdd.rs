@@ -157,3 +157,8 @@ pub fn ensure_display_count(_count: u32) -> Result<(), String> {
 pub fn current_count() -> u32 {
     0
 }
+
+#[cfg(not(target_os = "linux"))]
+pub fn set_config(_base_display: u32, _width: u32, _height: u32, _depth: u32) -> Result<(), String> {
+    Err("Linux virtual display management is only available on Linux.".to_string())
+}

@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 #[derive(Debug, Deserialize)]

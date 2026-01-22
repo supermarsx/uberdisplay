@@ -143,6 +143,22 @@ fn list_virtual_displays() -> Vec<app_state::DisplayInfo> {
 }
 
 #[tauri::command]
+fn virtual_display_count() -> u32 {
+    #[cfg(windows)]
+    {
+        return display_probe::list_displays()
+            .into_iter()
+            .filter(|display| display.is_virtual)
+            .count() as u32;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        return linux_vdd::current_count();
+    }
+    0
+}
+
+#[tauri::command]
 fn virtual_driver_status(app_handle: tauri::AppHandle) -> Result<driver_manager::DriverManagerStatus, String> {
     driver_manager::status().map_err(|err| {
         let _ = host_log::append_log(&app_handle, format!("Driver manager status failed: {err}"));
@@ -182,6 +198,76 @@ fn set_virtual_display_count(app_handle: tauri::AppHandle, count: u32) -> Result
     }
     #[allow(unreachable_code)]
     Err("Virtual display management not supported on this platform.".to_string())
+}
+
+#[tauri::command]
+fn set_linux_vdd_config(
+    app_handle: tauri::AppHandle,
+    base_display: u32,
+    width: u32,
+    height: u32,
+    depth: u32,
+) -> Result<(), String> {
+    linux_vdd::set_config(base_display, width, height, depth).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Linux VDD config failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(
+        &app_handle,
+        format!("Linux VDD config set: :{base_display} {width}x{height}x{depth}"),
+    );
+    Ok(())
+}
+
+#[tauri::command]
+fn driver_pipe_ping(app_handle: tauri::AppHandle) -> Result<bool, String> {
+    driver_ipc::ping().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver pipe ping failed: {err}"));
+        err
+    })
+}
+
+#[tauri::command]
+fn driver_pipe_get_settings(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
+    driver_ipc::get_settings_raw().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver pipe get settings failed: {err}"));
+        err
+    })
+}
+
+#[tauri::command]
+fn driver_pipe_set_toggle(
+    app_handle: tauri::AppHandle,
+    option: String,
+    enabled: bool,
+) -> Result<(), String> {
+    let result = match option.as_str() {
+        "logging" => driver_ipc::set_logging(enabled),
+        "debug" => driver_ipc::set_debug_logging(enabled),
+        "hdr_plus" => driver_ipc::set_hdr_plus(enabled),
+        "sdr10" => driver_ipc::set_sdr10(enabled),
+        "custom_edid" => driver_ipc::set_custom_edid(enabled),
+        "prevent_spoof" => driver_ipc::set_prevent_spoof(enabled),
+        "cea_override" => driver_ipc::set_cea_override(enabled),
+        "hardware_cursor" => driver_ipc::set_hardware_cursor(enabled),
+        _ => Err("Unknown driver toggle option".to_string()),
+    };
+    result.map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver pipe toggle failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, format!("Driver toggle {option} set to {enabled}"));
+    Ok(())
+}
+
+#[tauri::command]
+fn driver_pipe_set_gpu(app_handle: tauri::AppHandle, name: String) -> Result<(), String> {
+    driver_ipc::set_gpu(&name).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver pipe set GPU failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, format!("Driver GPU set: {name}"));
+    Ok(())
 }
 #[tauri::command]
 fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
@@ -495,7 +581,13 @@ fn main() {
             list_display_modes,
             virtual_driver_status,
             virtual_driver_action,
+            virtual_display_count,
             set_virtual_display_count,
+            set_linux_vdd_config,
+            driver_pipe_ping,
+            driver_pipe_get_settings,
+            driver_pipe_set_toggle,
+            driver_pipe_set_gpu,
             create_virtual_display,
             remove_virtual_display,
             set_session_display_target,

@@ -283,13 +283,13 @@
 - [ ] Add virtual display count control in UI (multi-screen support)
 - [ ] Add driver management (install/enable/disable/status) via virtual-driver-manager.ps1 JSON output
 - [x] Add Linux virtual display backend (Xvfb-based) for headless sessions
-- [ ] Add Linux Xvfb configuration controls (display base, resolution, depth)
+- [x] Add Linux Xvfb configuration controls (display base, resolution, depth)
 - [ ] Add Linux virtual display persistence + cleanup on app exit
 - [ ] Add Linux display inventory integration (track Xvfb instances as virtual outputs)
 - [x] Add virtual display count control in UI (multi-screen support)
 - [x] Add driver manager status/action backend via virtual-driver-manager.ps1
-- [ ] Wire driver manager status/action UI (install/enable/disable/status)
-- [ ] Map MTTVirtualDisplayPipe settings toggles (HDR+, SDR10, logging, cursor, spoof) into UI
+- [x] Wire driver manager status/action UI (install/enable/disable/status)
+- [x] Map MTTVirtualDisplayPipe settings toggles (HDR+, SDR10, logging, cursor, spoof) into UI
 - [ ] Add driver log stream toggle to surface pipe log output
 - [ ] Research macOS virtual display options (dummy display dongle, BetterDisplay CLI, ScreenCaptureKit capture targets)
 - [ ] Determine macOS control surface (install steps, CLI/API, entitlements) and wire into UI

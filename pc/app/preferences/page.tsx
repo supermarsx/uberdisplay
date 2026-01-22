@@ -46,6 +46,30 @@ export default function PreferencesPage() {
   const [displayTarget, setDisplayTarget] = useState("auto");
   const [virtualDisplayLabel, setVirtualDisplayLabel] = useState("UberDisplay");
   const [virtualDisplayCount, setVirtualDisplayCount] = useState(1);
+  const [driverStatus, setDriverStatus] = useState<{
+    installed: boolean;
+    status: string;
+    details?: { friendlyName?: string; instanceId?: string; pnpDeviceID?: string };
+  } | null>(null);
+  const [driverPing, setDriverPing] = useState<boolean | null>(null);
+  const [driverSettingsRaw, setDriverSettingsRaw] = useState<string | null>(null);
+  const [driverToggles, setDriverToggles] = useState({
+    logging: false,
+    debug: false,
+    hdrPlus: false,
+    sdr10: false,
+    customEdid: false,
+    preventSpoof: false,
+    ceaOverride: false,
+    hardwareCursor: false,
+  });
+  const [driverGpuName, setDriverGpuName] = useState("");
+  const [linuxConfig, setLinuxConfig] = useState({
+    baseDisplay: 99,
+    width: 2560,
+    height: 1600,
+    depth: 24,
+  });
   const [inputControls, setInputControls] = useState({
     enableInput: true,
     captureOnConnect: true,
@@ -72,6 +96,47 @@ export default function PreferencesPage() {
       }
     };
 
+    const loadDriverStatus = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<{
+          installed: boolean;
+          status: string;
+          details?: { friendlyName?: string; instanceId?: string; pnpDeviceID?: string };
+        }>("virtual_driver_status");
+        if (!cancelled) {
+          setDriverStatus(data);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setDriverStatus(null);
+        }
+      }
+    };
+
+    const loadDriverPipe = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const ping = await invoke<boolean>("driver_pipe_ping");
+        const settings = await invoke<string | null>("driver_pipe_get_settings");
+        if (!cancelled) {
+          setDriverPing(ping);
+          setDriverSettingsRaw(settings ?? null);
+          if (settings) {
+            setDriverToggles((prev) => ({
+              ...prev,
+              debug: /DEBUG=true/i.test(settings),
+              logging: /LOG=true/i.test(settings),
+            }));
+          }
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setDriverPing(false);
+        }
+      }
+    };
+
     const loadDisplays = async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
@@ -90,9 +155,10 @@ export default function PreferencesPage() {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
         const data = await invoke<DisplayInfo[]>("list_virtual_displays");
+        const count = await invoke<number>("virtual_display_count");
         if (!cancelled) {
           setVirtualDisplays(data ?? []);
-          setVirtualDisplayCount(Math.max(1, data.length || 1));
+          setVirtualDisplayCount(Math.max(1, count || 1));
         }
       } catch (_error) {
         if (!cancelled) {
@@ -102,6 +168,8 @@ export default function PreferencesPage() {
     };
 
     loadStatus();
+    loadDriverStatus();
+    loadDriverPipe();
     loadDisplays();
     loadVirtualDisplays();
     return () => {
@@ -179,6 +247,66 @@ export default function PreferencesPage() {
       pushToast(`Virtual display count set to ${virtualDisplayCount}.`, "success");
     } catch (err) {
       pushToast("Unable to update virtual display count.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleDriverAction = async (action: string) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("virtual_driver_action", { action });
+      pushToast(`Driver action: ${action}.`, "success");
+    } catch (err) {
+      pushToast("Unable to run driver action.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleDriverToggle = async (key: keyof typeof driverToggles, enabled: boolean) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const optionMap: Record<string, string> = {
+        logging: "logging",
+        debug: "debug",
+        hdrPlus: "hdr_plus",
+        sdr10: "sdr10",
+        customEdid: "custom_edid",
+        preventSpoof: "prevent_spoof",
+        ceaOverride: "cea_override",
+        hardwareCursor: "hardware_cursor",
+      };
+      await invoke("driver_pipe_set_toggle", { option: optionMap[key], enabled });
+      setDriverToggles((prev) => ({ ...prev, [key]: enabled }));
+      pushToast(`Driver toggle updated.`, "success");
+    } catch (err) {
+      pushToast("Unable to update driver toggle.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleDriverSetGpu = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("driver_pipe_set_gpu", { name: driverGpuName });
+      pushToast("Driver GPU set.", "success");
+    } catch (err) {
+      pushToast("Unable to set driver GPU.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleLinuxConfigApply = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("set_linux_vdd_config", {
+        baseDisplay: linuxConfig.baseDisplay,
+        width: linuxConfig.width,
+        height: linuxConfig.height,
+        depth: linuxConfig.depth,
+      });
+      pushToast("Linux VDD config applied.", "success");
+    } catch (err) {
+      pushToast("Unable to apply Linux VDD config.", "error");
       console.error(err);
     }
   };
@@ -443,6 +571,125 @@ export default function PreferencesPage() {
           </div>
         </section>
 
+        <section className="card status-card">
+          <div className="card-header">
+            <div className="card-title">Driver Manager</div>
+            <div className="card-subtitle">Install, enable, and inspect driver status</div>
+          </div>
+          <div className="status-metrics compact">
+            <div>
+              <div className="metric-label">Installed</div>
+              <div className="metric-value">{driverStatus?.installed ? "Yes" : "No"}</div>
+            </div>
+            <div>
+              <div className="metric-label">Status</div>
+              <div className="metric-value">{driverStatus?.status ?? "Unknown"}</div>
+            </div>
+            <div>
+              <div className="metric-label">Device</div>
+              <div className="metric-value">{driverStatus?.details?.friendlyName ?? "—"}</div>
+            </div>
+            <div>
+              <div className="metric-label">Pipe</div>
+              <div className="metric-value">{driverPing ? "Online" : "Offline"}</div>
+            </div>
+          </div>
+          <div className="form-actions">
+            <button className="secondary-button" type="button" onClick={() => handleDriverAction("install")}>Install</button>
+            <button className="secondary-button" type="button" onClick={() => handleDriverAction("enable")}>Enable</button>
+            <button className="secondary-button" type="button" onClick={() => handleDriverAction("disable")}>Disable</button>
+            <button className="secondary-button" type="button" onClick={() => handleDriverAction("status")}>Refresh</button>
+          </div>
+          {driverSettingsRaw && <div className="form-note">Pipe: {driverSettingsRaw}</div>}
+        </section>
+
+        <section className="card settings-card">
+          <div className="card-header">
+            <div className="card-title">Driver Pipe Toggles</div>
+            <div className="card-subtitle">HDR, logging, and driver flags</div>
+          </div>
+          <div className="form-toggle-row">
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.hdrPlus}
+                onChange={(event) => handleDriverToggle("hdrPlus", event.target.checked)}
+              />
+              HDR+
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.sdr10}
+                onChange={(event) => handleDriverToggle("sdr10", event.target.checked)}
+              />
+              SDR10
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.logging}
+                onChange={(event) => handleDriverToggle("logging", event.target.checked)}
+              />
+              Logging
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.debug}
+                onChange={(event) => handleDriverToggle("debug", event.target.checked)}
+              />
+              Debug Logs
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.customEdid}
+                onChange={(event) => handleDriverToggle("customEdid", event.target.checked)}
+              />
+              Custom EDID
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.preventSpoof}
+                onChange={(event) => handleDriverToggle("preventSpoof", event.target.checked)}
+              />
+              Prevent Spoof
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.ceaOverride}
+                onChange={(event) => handleDriverToggle("ceaOverride", event.target.checked)}
+              />
+              CEA Override
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={driverToggles.hardwareCursor}
+                onChange={(event) => handleDriverToggle("hardwareCursor", event.target.checked)}
+              />
+              Hardware Cursor
+            </label>
+          </div>
+          <div className="form-grid">
+            <label className="form-field">
+              <span className="form-label">GPU Name</span>
+              <input
+                className="form-input"
+                value={driverGpuName}
+                onChange={(event) => setDriverGpuName(event.target.value)}
+                placeholder="\"NVIDIA GeForce\""
+              />
+            </label>
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={handleDriverSetGpu}>Apply GPU</button>
+            </div>
+          </div>
+        </section>
+
         <section className="card settings-card">
           <div className="card-header">
             <div className="card-title">Display Targets</div>
@@ -525,6 +772,60 @@ export default function PreferencesPage() {
               ))
             )}
           </div>
+        </section>
+
+        <section className="card status-card">
+          <div className="card-header">
+            <div className="card-title">Linux Virtual Display</div>
+            <div className="card-subtitle">Xvfb base display + resolution</div>
+          </div>
+          <div className="form-grid">
+            <label className="form-field">
+              <span className="form-label">Base Display</span>
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                value={linuxConfig.baseDisplay}
+                onChange={(event) => setLinuxConfig({ ...linuxConfig, baseDisplay: Number(event.target.value) })}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-label">Width</span>
+              <input
+                className="form-input"
+                type="number"
+                min={320}
+                value={linuxConfig.width}
+                onChange={(event) => setLinuxConfig({ ...linuxConfig, width: Number(event.target.value) })}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-label">Height</span>
+              <input
+                className="form-input"
+                type="number"
+                min={240}
+                value={linuxConfig.height}
+                onChange={(event) => setLinuxConfig({ ...linuxConfig, height: Number(event.target.value) })}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-label">Depth</span>
+              <input
+                className="form-input"
+                type="number"
+                min={16}
+                max={32}
+                value={linuxConfig.depth}
+                onChange={(event) => setLinuxConfig({ ...linuxConfig, depth: Number(event.target.value) })}
+              />
+            </label>
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={handleLinuxConfigApply}>Apply Linux Config</button>
+            </div>
+          </div>
+          <div className="form-note">Linux-only: restarts Xvfb instances if already running.</div>
         </section>
 
         <section className="card status-card">
