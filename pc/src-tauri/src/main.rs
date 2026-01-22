@@ -139,6 +139,13 @@ fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn clear_logs(app_handle: tauri::AppHandle) -> Result<(), String> {
+    host_log::clear_logs(&app_handle)?;
+    let _ = host_log::append_log(&app_handle, "Cleared logs");
+    Ok(())
+}
+
+#[tauri::command]
 fn export_diagnostics(app_handle: tauri::AppHandle) -> Result<String, String> {
     let status = app_status(app_handle.clone());
     let stats = session_state::stats_snapshot();
@@ -354,6 +361,7 @@ fn main() {
             negotiate_codec,
             list_logs,
             export_logs,
+            clear_logs,
             export_diagnostics,
             list_displays,
             start_session,
