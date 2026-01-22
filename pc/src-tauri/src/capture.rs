@@ -17,8 +17,8 @@ use windows::Win32::Graphics::Direct3D11::{
 #[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreateDCW, DeleteDC, DeleteObject,
-    EnumDisplaySettingsExW, GetDIBits, GetDC, ReleaseDC, SelectObject, SetStretchBltMode,
-    StretchBlt, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HALFTONE, SRCCOPY,
+    GetDIBits, GetDC, ReleaseDC, SelectObject, SetStretchBltMode, StretchBlt, BITMAPINFO,
+    BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HALFTONE, SRCCOPY,
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Dxgi::{

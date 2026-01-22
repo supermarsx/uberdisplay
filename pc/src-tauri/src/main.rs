@@ -155,7 +155,10 @@ fn virtual_display_count() -> u32 {
     {
         return linux_vdd::current_count();
     }
-    0
+    #[cfg(not(any(windows, target_os = "linux")))]
+    {
+        0
+    }
 }
 
 #[tauri::command]
@@ -270,7 +273,7 @@ fn driver_pipe_set_gpu(app_handle: tauri::AppHandle, name: String) -> Result<(),
     Ok(())
 }
 #[tauri::command]
-fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
+fn list_display_modes(_app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
     display_probe::list_display_modes(&display_id)
 }
 

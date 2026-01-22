@@ -1,8 +1,8 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process::Command;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DriverManagerStatus {
     pub installed: bool,
     pub status: String,
@@ -10,7 +10,7 @@ pub struct DriverManagerStatus {
     pub details: Option<DriverManagerDetails>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DriverManagerDetails {
     #[serde(default)]
     pub friendlyName: Option<String>,
