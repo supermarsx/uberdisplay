@@ -797,6 +797,11 @@ body {
   .hero-body {
     max-width: 100%;
   }
+
+  .hero {
+    min-height: auto;
+    align-self: stretch;
+  }
 }
 
 @media (max-width: 800px) {
