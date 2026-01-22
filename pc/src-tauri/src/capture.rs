@@ -180,6 +180,21 @@ struct DxgiCapture {
 }
 
 #[cfg(windows)]
+struct DxgiFrame {
+    duplication: IDXGIOutputDuplication,
+    texture: ID3D11Texture2D,
+}
+
+#[cfg(windows)]
+impl Drop for DxgiFrame {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = self.duplication.ReleaseFrame();
+        }
+    }
+}
+
+#[cfg(windows)]
 static DXGI_CAPTURE: OnceLock<Mutex<Option<DxgiCapture>>> = OnceLock::new();
 
 #[cfg(windows)]
@@ -196,11 +211,34 @@ fn capture_bgra_dxgi(width: i32, height: i32) -> Result<Vec<u8>, String> {
     }
 
     let capture = guard.as_mut().ok_or_else(|| "DXGI capture not initialized".to_string())?;
-    match acquire_dxgi_frame(capture) {
-        Ok(frame) => {
-            capture.last_frame_bytes = frame.len() as u32;
-            Ok(frame)
+    let frame = match acquire_dxgi_frame(capture) {
+        Ok(frame) => frame,
+        Err(err) => {
+            capture.frame_failures = capture.frame_failures.saturating_add(1);
+            *guard = None;
+            return Err(err);
         }
+    };
+    capture.last_frame_bytes = frame.len() as u32;
+    Ok(frame)
+}
+
+#[cfg(windows)]
+pub fn capture_dxgi_surface(width: i32, height: i32) -> Result<DxgiFrame, String> {
+    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
+    let mut guard = store.lock().map_err(|_| "DXGI lock poisoned".to_string())?;
+
+    let needs_init = match guard.as_ref() {
+        Some(capture) => capture.width != width || capture.height != height,
+        None => true,
+    };
+    if needs_init {
+        *guard = Some(init_dxgi_capture(width, height)?);
+    }
+
+    let capture = guard.as_mut().ok_or_else(|| "DXGI capture not initialized".to_string())?;
+    match acquire_dxgi_surface(capture) {
+        Ok(frame) => Ok(frame),
         Err(err) => {
             capture.frame_failures = capture.frame_failures.saturating_add(1);
             *guard = None;
@@ -336,6 +374,35 @@ fn acquire_dxgi_frame(capture: &mut DxgiCapture) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(windows)]
+fn acquire_dxgi_surface(capture: &mut DxgiCapture) -> Result<DxgiFrame, String> {
+    let mut frame_info = DXGI_OUTDUPL_FRAME_INFO::default();
+    let mut resource: Option<IDXGIResource> = None;
+    let result = unsafe { capture.duplication.AcquireNextFrame(16, &mut frame_info, &mut resource) };
+    if let Err(err) = result {
+        let code = err.code();
+        if code == DXGI_ERROR_WAIT_TIMEOUT || code == DXGI_ERROR_ACCESS_LOST {
+            if code == DXGI_ERROR_WAIT_TIMEOUT {
+                capture.timeouts = capture.timeouts.saturating_add(1);
+                return Err("DXGI capture timeout".to_string());
+            }
+            capture.access_lost = capture.access_lost.saturating_add(1);
+            return Err("DXGI capture access lost".to_string());
+        }
+        return Err(format!("DXGI AcquireNextFrame failed: 0x{:08x}", code.0));
+    }
+
+    let resource = resource.ok_or_else(|| "DXGI resource missing".to_string())?;
+    let texture: ID3D11Texture2D = resource
+        .cast()
+        .map_err(|err| format!("DXGI resource cast failed: 0x{:08x}", err.code().0))?;
+
+    Ok(DxgiFrame {
+        duplication: capture.duplication.clone(),
+        texture,
+    })
+}
+
+#[cfg(windows)]
 pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
     let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
     let guard = store.lock().ok()?;
@@ -351,4 +418,15 @@ pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
 #[cfg(not(windows))]
 pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
     None
+}
+
+#[cfg(windows)]
+pub fn dxgi_surface_available() -> bool {
+    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
+    store.lock().ok().and_then(|guard| guard.as_ref()).is_some()
+}
+
+#[cfg(not(windows))]
+pub fn dxgi_surface_available() -> bool {
+    false
 }
