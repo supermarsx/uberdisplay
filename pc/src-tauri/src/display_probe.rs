@@ -52,7 +52,9 @@ pub fn list_displays() -> Vec<DisplayInfo> {
 
 #[cfg(windows)]
 fn query_display_mode(device_name: &[u16]) -> (i32, i32, i32) {
-    use windows::Win32::Graphics::Gdi::{DEVMODEW, ENUM_CURRENT_SETTINGS};
+    use windows::Win32::Graphics::Gdi::{
+        EnumDisplaySettingsExW, DEVMODEW, ENUM_CURRENT_SETTINGS, ENUM_DISPLAY_SETTINGS_FLAGS,
+    };
     use windows::core::PCWSTR;
 
     let mut devmode = DEVMODEW::default();
@@ -62,7 +64,7 @@ fn query_display_mode(device_name: &[u16]) -> (i32, i32, i32) {
             PCWSTR::from_raw(device_name.as_ptr()),
             ENUM_CURRENT_SETTINGS,
             &mut devmode,
-            0,
+            ENUM_DISPLAY_SETTINGS_FLAGS(0),
         )
     };
     if ok.as_bool() {

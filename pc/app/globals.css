@@ -342,6 +342,30 @@ body {
   gap: 12px;
 }
 
+.log-list {
+  max-height: clamp(220px, 40vh, 420px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.log-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+.log-list::-webkit-scrollbar-thumb {
+  background: rgba(230, 222, 201, 0.35);
+  border-radius: 999px;
+}
+
+.log-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(230, 222, 201, 0.5);
+}
+
 .device-row {
   display: flex;
   align-items: center;

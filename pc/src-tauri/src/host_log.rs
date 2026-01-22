@@ -51,6 +51,10 @@ pub fn export_logs(app_handle: &tauri::AppHandle) -> Result<String, String> {
     Ok(export_path.to_string_lossy().to_string())
 }
 
+pub fn clear_logs(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    save_logs(app_handle, &[])
+}
+
 fn save_logs(app_handle: &tauri::AppHandle, logs: &[HostLogEntry]) -> Result<(), String> {
     let path = log_path(app_handle);
     if let Some(parent) = path.parent() {

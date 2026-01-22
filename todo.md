@@ -265,6 +265,14 @@
 - [x] Add GDI capture scale-to-stream path when sizes mismatch
 - [x] Add DXGI capture health telemetry (timeouts/failures) to diagnostics
 - [x] Show capture path + scale in diagnostics and home UI
+- [x] Add display inventory probe (physical + virtual outputs)
+
+## Virtual Display + Multi-Screen
+- [ ] Add virtual display manager commands (create/remove/list modes)
+- [ ] Add driver install/check hooks for virtual display driver
+- [ ] Add per-session display assignment (virtual/physical/mirror)
+- [ ] Support multiple concurrent sessions with per-display routing
+- [ ] Add UI for display selection + status
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats

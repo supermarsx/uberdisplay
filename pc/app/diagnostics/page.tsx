@@ -32,6 +32,17 @@ type HostLogEntry = {
   message: string;
 };
 
+type DisplayInfo = {
+  id: string;
+  name: string;
+  active: boolean;
+  primary: boolean;
+  width: number;
+  height: number;
+  refreshHz: number;
+  isVirtual: boolean;
+};
+
 type SessionStats = {
   fps: number;
   bitrateKbps: number;
@@ -74,6 +85,7 @@ export default function DiagnosticsPage() {
   const [logs, setLogs] = useState<HostLogEntry[]>(fallbackLogs);
   const [notice, setNotice] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>(fallbackStats);
+  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +121,20 @@ export default function DiagnosticsPage() {
       }
     };
 
+    const loadDisplays = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<DisplayInfo[]>("list_displays");
+        if (!cancelled) {
+          setDisplays(data ?? []);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setDisplays([]);
+        }
+      }
+    };
+
     const loadSessionStats = async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
@@ -125,6 +151,7 @@ export default function DiagnosticsPage() {
 
     loadStatus();
     loadLogs();
+    loadDisplays();
     loadSessionStats();
     statsTimer = setInterval(loadSessionStats, 2000);
     return () => {
@@ -161,6 +188,17 @@ export default function DiagnosticsPage() {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       await invoke("record_action", { message: `Viewed log details: ${message}` });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearLogView = async () => {
+    setLogs([]);
+    setNotice("Event log cleared (view only).");
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: "Cleared event log view" });
     } catch (err) {
       console.error(err);
     }
@@ -272,7 +310,7 @@ export default function DiagnosticsPage() {
             <div className="card-title">Event Log</div>
             <div className="card-subtitle">Most recent host events</div>
           </div>
-          <div className="device-list">
+          <div className="device-list log-list">
             {logs.map((entry) => (
               <div className="device-row" key={`${entry.timestamp}-${entry.message}`}>
                 <div>
@@ -287,11 +325,42 @@ export default function DiagnosticsPage() {
           </div>
           <div className="divider" />
           <div className="connect-actions">
+            <button className="secondary-button" type="button" onClick={handleClearLogView}>Clear View</button>
             <button className="secondary-button" type="button" onClick={handleExportLogs}>Export Logs</button>
             <button className="secondary-button" type="button" onClick={handleExportDiagnostics}>Export Diagnostics</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
           {notice && <div className="form-note">{notice}</div>}
+        </section>
+        <section className="card settings-card">
+        <div className="card-header">
+          <div className="card-title">Displays</div>
+          <div className="card-subtitle">Detected physical + virtual outputs</div>
+        </div>
+        <div className="device-list">
+          {displays.length === 0 ? (
+            <div className="device-row muted">
+              <div>
+                <div className="device-name">No displays detected</div>
+                <div className="device-meta">Check driver installation or permissions.</div>
+              </div>
+            </div>
+          ) : (
+            displays.map((display) => (
+              <div className="device-row" key={display.id}>
+                <div>
+                  <div className="device-name">{display.name || display.id}</div>
+                  <div className="device-meta">
+                    {display.width} x {display.height} @ {display.refreshHz} Hz
+                    {display.primary ? " • Primary" : ""}
+                    {display.active ? " • Active" : ""}
+                    {display.isVirtual ? " • Virtual" : ""}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
         </section>
       </main>
 
