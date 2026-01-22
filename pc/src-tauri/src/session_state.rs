@@ -1,6 +1,6 @@
 use std::sync::{Mutex, OnceLock};
 
-use crate::app_state::SessionStats;
+use crate::app_state::{SessionLifecycle, SessionStats};
 use crate::codec::CodecId;
 use crate::encoder::EncoderBackend;
 
@@ -11,6 +11,7 @@ pub struct SessionState {
     pub active_device_id: Option<String>,
     pub input_permissions: crate::app_state::InputPermissions,
     pub stats: SessionStats,
+    pub lifecycle: SessionLifecycle,
 }
 
 static SESSION_STATE: OnceLock<Mutex<SessionState>> = OnceLock::new();
@@ -22,6 +23,7 @@ fn state_store() -> &'static Mutex<SessionState> {
         active_device_id: None,
         input_permissions: crate::app_state::InputPermissions::default(),
         stats: SessionStats::default(),
+        lifecycle: SessionLifecycle::Idle,
     }))
 }
 
@@ -48,6 +50,19 @@ pub fn update_input_permissions(permissions: crate::app_state::InputPermissions)
     if let Ok(mut state) = state_store().lock() {
         state.input_permissions = permissions;
     }
+}
+
+pub fn update_lifecycle(lifecycle: SessionLifecycle) {
+    if let Ok(mut state) = state_store().lock() {
+        state.lifecycle = lifecycle;
+    }
+}
+
+pub fn lifecycle_snapshot() -> SessionLifecycle {
+    state_store()
+        .lock()
+        .map(|state| state.lifecycle.clone())
+        .unwrap_or(SessionLifecycle::Idle)
 }
 
 pub fn update_stats(stats: SessionStats) {
@@ -79,5 +94,6 @@ pub fn snapshot() -> SessionState {
             active_device_id: None,
             input_permissions: crate::app_state::InputPermissions::default(),
             stats: SessionStats::default(),
+            lifecycle: SessionLifecycle::Idle,
         })
 }

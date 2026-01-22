@@ -111,30 +111,48 @@ body {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 16px 8px;
+  padding: 18px 22px;
   scrollbar-width: thin;
   scrollbar-color: rgba(230, 222, 201, 0.35) transparent;
 }
 
 .content-grid {
+  --fade-edge: 18px;
+  --fade-side: 22px;
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0px,
-    rgba(0, 0, 0, 1) 18px,
-    rgba(0, 0, 0, 1) calc(100% - 18px),
+    rgba(0, 0, 0, 1) var(--fade-edge),
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-edge)),
+    transparent 100%
+  ),
+  linear-gradient(
+    to right,
+    transparent 0px,
+    rgba(0, 0, 0, 1) var(--fade-side),
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-side)),
     transparent 100%
   );
   mask-image: linear-gradient(
     to bottom,
     transparent 0px,
-    rgba(0, 0, 0, 1) 18px,
-    rgba(0, 0, 0, 1) calc(100% - 18px),
+    rgba(0, 0, 0, 1) var(--fade-edge),
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-edge)),
+    transparent 100%
+  ),
+  linear-gradient(
+    to right,
+    transparent 0px,
+    rgba(0, 0, 0, 1) var(--fade-side),
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-side)),
     transparent 100%
   );
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 .hero {

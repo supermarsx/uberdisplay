@@ -75,6 +75,7 @@ pub struct AppStatus {
     pub transport: TransportStatus,
     pub settings: HostSettings,
     pub devices: Vec<PairedDevice>,
+    pub session: SessionOverview,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,6 +85,22 @@ pub struct CodecSelection {
     pub codec_name: String,
     pub host_mask: u32,
     pub client_mask: u32,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum SessionLifecycle {
+    Idle,
+    Connecting,
+    Configured,
+    Streaming,
+    Error,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionOverview {
+    pub lifecycle: SessionLifecycle,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -125,6 +142,9 @@ impl Default for AppStatus {
             },
             settings: HostSettings::default(),
             devices: Vec::new(),
+            session: SessionOverview {
+                lifecycle: SessionLifecycle::Idle,
+            },
         }
     }
 }
