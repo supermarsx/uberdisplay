@@ -31,6 +31,7 @@ body {
   color: var(--text-strong);
   font-family: var(--font-ui);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .background {
@@ -384,6 +385,12 @@ body {
 .form-error {
   margin-top: 12px;
   color: #e0b8a8;
+  font-size: 12px;
+}
+
+.form-note {
+  margin-top: 12px;
+  color: #d7d1be;
   font-size: 12px;
 }
 

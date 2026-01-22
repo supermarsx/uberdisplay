@@ -15,13 +15,24 @@ pub struct TransportStatus {
     pub aoap_attached: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HostSettings {
     pub codec: String,
     pub quality: u8,
     pub refresh_cap_hz: u16,
     pub input_mode: String,
+}
+
+impl Default for HostSettings {
+    fn default() -> Self {
+        Self {
+            codec: "H.264 High".to_string(),
+            quality: 80,
+            refresh_cap_hz: 120,
+            input_mode: "Touch + Pen".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, serde::Deserialize, Clone)]
@@ -57,12 +68,7 @@ impl Default for AppStatus {
                 tcp_connections: 0,
                 aoap_attached: false,
             },
-            settings: HostSettings {
-                codec: "H.264 High".to_string(),
-                quality: 80,
-                refresh_cap_hz: 120,
-                input_mode: "Touch + Pen".to_string(),
-            },
+            settings: HostSettings::default(),
             devices: Vec::new(),
         }
     }

@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -25,15 +25,22 @@ const fallbackStatus: AppStatus = {
   devices: [],
 };
 
-const logEntries = [
-  { time: "00:12:41", message: "USB transport ready. AOAP handshake idle." },
-  { time: "00:12:08", message: "Wi-Fi listener active on port 1445." },
-  { time: "00:11:52", message: "Display driver installed, awaiting session." },
+type HostLogEntry = {
+  timestamp: number;
+  message: string;
+};
+
+const fallbackLogs: HostLogEntry[] = [
+  { timestamp: 0, message: "USB transport ready. AOAP handshake idle." },
+  { timestamp: 0, message: "Wi-Fi listener active on port 1445." },
+  { timestamp: 0, message: "Display driver installed, awaiting session." },
 ];
 
 export default function DiagnosticsPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [error, setError] = useState<string | null>(null);
+  const [logs, setLogs] = useState<HostLogEntry[]>(fallbackLogs);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,11 +61,53 @@ export default function DiagnosticsPage() {
       }
     };
 
+    const loadLogs = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<HostLogEntry[]>("list_logs");
+        if (!cancelled) {
+          setLogs(data.length ? data.slice().reverse() : fallbackLogs);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setLogs(fallbackLogs);
+        }
+      }
+    };
+
     loadStatus();
+    loadLogs();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleExportLogs = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const path = await invoke<string>("export_logs");
+      setNotice(`Logs exported to ${path}`);
+    } catch (err) {
+      setError("Unable to export logs.");
+      console.error(err);
+    }
+  };
+
+  const handleLogDetails = async (message: string) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: `Viewed log details: ${message}` });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const formatTimestamp = (timestamp: number) => {
+    if (!timestamp) {
+      return "Just now";
+    }
+    return new Date(timestamp * 1000).toLocaleTimeString();
+  };
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -120,23 +169,24 @@ export default function DiagnosticsPage() {
             <div className="card-subtitle">Most recent host events</div>
           </div>
           <div className="device-list">
-            {logEntries.map((entry) => (
-              <div className="device-row" key={`${entry.time}-${entry.message}`}>
+            {logs.map((entry) => (
+              <div className="device-row" key={`${entry.timestamp}-${entry.message}`}>
                 <div>
                   <div className="device-name">{entry.message}</div>
-                  <div className="device-meta">{entry.time}</div>
+                  <div className="device-meta">{formatTimestamp(entry.timestamp)}</div>
                 </div>
                 <div className="device-actions">
-                  <button className="pill-button" type="button">Details</button>
+                  <button className="pill-button" type="button" onClick={() => handleLogDetails(entry.message)}>Details</button>
                 </div>
               </div>
             ))}
           </div>
           <div className="divider" />
           <div className="connect-actions">
-            <button className="secondary-button" type="button">Export Logs</button>
+            <button className="secondary-button" type="button" onClick={handleExportLogs}>Export Logs</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
+          {notice && <div className="form-note">{notice}</div>}
         </section>
       </main>
 

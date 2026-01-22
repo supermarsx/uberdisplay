@@ -223,3 +223,14 @@
 - [x] Show root caps in MainActivity status
 - [x] Add RootModuleStatus handshake caching
 - [x] Add RootModuleStatus cache test
+
+## Codec + Streaming Pipeline
+- [ ] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet
+- [ ] Add protocol versioning/migration for codec negotiation in `spec.md`
+- [ ] Implement host encoder abstraction with codec priority: H.265 HEVC -> AV1 -> H.264 -> VP9
+- [ ] Wire GPU encoder backends where available (NVENC/AMF/QSV) with Media Foundation fallback on Windows
+- [ ] Implement cross-platform capture + encode pipeline (Windows first, feature-gated for macOS/Linux)
+- [ ] Add transport stream sender for encoded frames + FrameDone handling
+- [ ] Implement Android decoder selection via MediaCodec with SurfaceView/TextureView fallback
+- [ ] Add Android codec capability discovery + reporting to host
+- [ ] Add end-to-end session start/stop pipeline (host capture/encode -> transport -> Android decode/render)

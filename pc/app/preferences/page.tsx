@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -28,6 +28,8 @@ const fallbackStatus: AppStatus = {
 export default function PreferencesPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [form, setForm] = useState(fallbackStatus.settings);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +41,7 @@ export default function PreferencesPage() {
         if (!cancelled) {
           setStatus(data);
           setError(null);
+          setForm(data.settings);
         }
       } catch (_error) {
         if (!cancelled) {
@@ -53,6 +56,62 @@ export default function PreferencesPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleSave = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const payload = {
+        codec: form.codec,
+        quality: Number(form.quality),
+        refreshCapHz: Number(form.refreshCapHz),
+        inputMode: form.inputMode,
+      };
+      const saved = await invoke<AppStatus["settings"]>("update_settings", { settings: payload });
+      setStatus((prev) => ({ ...prev, settings: saved }));
+      setForm(saved);
+      setError(null);
+      setNotice("Preferences saved.");
+    } catch (err) {
+      setError("Unable to save preferences.");
+      console.error(err);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const saved = await invoke<AppStatus["settings"]>("reset_settings");
+      setStatus((prev) => ({ ...prev, settings: saved }));
+      setForm(saved);
+      setError(null);
+      setNotice("Preferences reset.");
+    } catch (err) {
+      setError("Unable to reset preferences.");
+      console.error(err);
+    }
+  };
+
+  const handleManagePresets = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: "Manage presets opened" });
+      setNotice("Presets manager requested.");
+    } catch (err) {
+      setError("Unable to open presets.");
+      console.error(err);
+    }
+  };
+
+  const handleActivateProfile = async (profile: string) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: `Activated profile ${profile}` });
+      setNotice(`Profile ${profile} activated.`);
+    } catch (err) {
+      setError("Unable to activate profile.");
+      console.error(err);
+    }
+  };
 
   const preferenceCards = [
     {
@@ -78,6 +137,14 @@ export default function PreferencesPage() {
         "Auto-reconnect: Enabled",
       ],
     },
+  ];
+
+  const codecOptions = [
+    "H.264 High",
+    "H.265 HEVC",
+    "H.266",
+    "AV1",
+    "VP9",
   ];
   return (
     <div className="app-shell">
@@ -105,9 +172,59 @@ export default function PreferencesPage() {
             new pairing sessions and can be overridden per device.
           </p>
           <div className="hero-actions">
-            <button className="primary-button" type="button">Save Changes</button>
-            <button className="secondary-button" type="button">Reset Defaults</button>
+            <button className="primary-button" type="button" onClick={handleSave}>Save Changes</button>
+            <button className="secondary-button" type="button" onClick={handleReset}>Reset Defaults</button>
           </div>
+          <form className="pair-form settings-form">
+            <div className="form-grid">
+              <label className="form-field">
+                <span className="form-label">Codec</span>
+                <select
+                  className="form-input"
+                  value={form.codec}
+                  onChange={(event) => setForm({ ...form, codec: event.target.value })}
+                >
+                  {codecOptions.map((codec) => (
+                    <option key={codec} value={codec}>
+                      {codec}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                <span className="form-label">Quality</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={10}
+                  max={100}
+                  value={form.quality}
+                  onChange={(event) => setForm({ ...form, quality: Number(event.target.value) })}
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Refresh Cap (Hz)</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={30}
+                  max={240}
+                  value={form.refreshCapHz}
+                  onChange={(event) =>
+                    setForm({ ...form, refreshCapHz: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Input Mode</span>
+                <input
+                  className="form-input"
+                  value={form.inputMode}
+                  onChange={(event) => setForm({ ...form, inputMode: event.target.value })}
+                />
+              </label>
+            </div>
+          </form>
         </section>
 
         <section className="card status-card">
@@ -121,14 +238,14 @@ export default function PreferencesPage() {
                 <div className="device-name">Studio</div>
                 <div className="device-meta">High fidelity for pen work</div>
               </div>
-              <button className="pill-button" type="button">Active</button>
+              <button className="pill-button" type="button" onClick={() => handleActivateProfile("Studio")}>Active</button>
             </div>
             <div className="device-row">
               <div>
                 <div className="device-name">Mobile</div>
                 <div className="device-meta">Balanced for quick sharing</div>
               </div>
-              <button className="secondary-button" type="button">Activate</button>
+              <button className="secondary-button" type="button" onClick={() => handleActivateProfile("Mobile")}>Activate</button>
             </div>
           </div>
         </section>
@@ -151,10 +268,11 @@ export default function PreferencesPage() {
           </div>
           <div className="divider" />
           <div className="connect-actions">
-            <button className="secondary-button" type="button">Manage Presets</button>
+            <button className="secondary-button" type="button" onClick={handleManagePresets}>Manage Presets</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
           {error && <div className="form-error">{error}</div>}
+          {notice && <div className="form-note">{notice}</div>}
         </section>
       </main>
 

@@ -51,6 +51,7 @@ export default function HomePage() {
   const [form, setForm] = useState<DeviceForm>(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +88,7 @@ export default function HomePage() {
       const list = await invokeTauri<AppStatus["devices"]>("list_devices");
       setDevices(list ?? []);
       setError(null);
+      setNotice("Device list refreshed.");
     } catch (err) {
       setError("Unable to refresh devices.");
       console.error(err);
@@ -113,6 +115,7 @@ export default function HomePage() {
       setForm(initialForm);
       setPairingOpen(false);
       setError(null);
+      setNotice("Device paired.");
     } catch (err) {
       setError("Unable to save device.");
       console.error(err);
@@ -154,6 +157,7 @@ export default function HomePage() {
       setEditingDeviceId(null);
       setPairingOpen(false);
       setError(null);
+      setNotice("Device updated.");
     } catch (err) {
       setError("Unable to update device.");
       console.error(err);
@@ -165,12 +169,46 @@ export default function HomePage() {
       const list = await invokeTauri<AppStatus["devices"]>("remove_device", { deviceId });
       setDevices(list ?? []);
       setError(null);
+      setNotice("Device removed.");
     } catch (err) {
       setError("Unable to remove device.");
       console.error(err);
     }
   };
 
+  const handleConnect = async (deviceId: string) => {
+    try {
+      const list = await invokeTauri<AppStatus["devices"]>("connect_device", { deviceId });
+      setDevices(list ?? []);
+      setError(null);
+      setNotice("Connection requested.");
+    } catch (err) {
+      setError("Unable to connect device.");
+      console.error(err);
+    }
+  };
+
+  const handleStartSession = async () => {
+    try {
+      await invokeTauri("start_session");
+      setError(null);
+      setNotice("Session start requested.");
+    } catch (err) {
+      setError("Unable to start session.");
+      console.error(err);
+    }
+  };
+
+  const handleAddVirtualDisplay = async () => {
+    try {
+      await invokeTauri("add_virtual_display");
+      setError(null);
+      setNotice("Virtual display requested.");
+    } catch (err) {
+      setError("Unable to add virtual display.");
+      console.error(err);
+    }
+  };
   const driverChip = status.driver.installed
     ? status.driver.active
       ? "Driver OK"
@@ -180,6 +218,17 @@ export default function HomePage() {
   const wifiChip = status.transport.tcpListening
     ? `Wi-Fi Ready (${status.transport.tcpConnections})`
     : "Wi-Fi Offline";
+
+  const formatLastSeen = (value?: string | null) => {
+    if (!value) {
+      return "";
+    }
+    if (/^\d+$/.test(value)) {
+      const timestamp = Number(value) * 1000;
+      return new Date(timestamp).toLocaleTimeString();
+    }
+    return value;
+  };
 
   return (
     <div className="app-shell">
@@ -207,7 +256,7 @@ export default function HomePage() {
             precision, and adaptive transport. USB-first, Wi-Fi ready.
           </p>
           <div className="hero-actions">
-            <button className="primary-button" type="button">Start Session</button>
+            <button className="primary-button" type="button" onClick={handleStartSession}>Start Session</button>
             <button
               className="secondary-button"
               type="button"
@@ -291,11 +340,11 @@ export default function HomePage() {
                     <div className="device-name">{device.name}</div>
                     <div className="device-meta">
                       {device.transport} - {device.status}
-                      {device.lastSeen ? ` - ${device.lastSeen}` : ""}
+                      {device.lastSeen ? ` - ${formatLastSeen(device.lastSeen)}` : ""}
                     </div>
                   </div>
                   <div className="device-actions">
-                    <button className="pill-button" type="button">Connect</button>
+                    <button className="pill-button" type="button" onClick={() => handleConnect(device.id)}>Connect</button>
                     <button
                       className="secondary-button"
                       type="button"
@@ -374,12 +423,13 @@ export default function HomePage() {
           )}
           <div className="divider" />
           <div className="connect-actions">
-            <button className="secondary-button" type="button">Add Virtual Display</button>
+            <button className="secondary-button" type="button" onClick={handleAddVirtualDisplay}>Add Virtual Display</button>
             <div className="connect-actions-links">
               <button className="ghost-button" type="button" onClick={refreshDevices}>Refresh</button>
               <Link className="ghost-button" href="/diagnostics">View Logs</Link>
             </div>
           </div>
+          {notice && <div className="form-note">{notice}</div>}
         </section>
 
         <section className="card settings-card">
