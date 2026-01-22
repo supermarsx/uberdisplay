@@ -493,7 +493,7 @@ export default function PreferencesPage() {
             <button className="secondary-button" type="button" onClick={handleReset}>Reset Defaults</button>
           </div>
           <form className="pair-form settings-form">
-            <div className="form-grid">
+            <div className="form-grid prefs-grid">
               <label className="form-field">
                 <span className="form-label">Codec</span>
                 <select
