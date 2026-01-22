@@ -224,6 +224,7 @@
 - [x] Add RootModuleStatus handshake caching
 - [x] Add RootModuleStatus cache test
 - [x] Fix hero "second canvas" text layout in single-column mode
+- [x] Show session telemetry (fps/bitrate) on Home status card
 
 ## Codec + Streaming Pipeline
 - [x] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet

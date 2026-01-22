@@ -31,6 +31,15 @@ type CodecSelection = {
   clientMask: number;
 };
 
+type SessionStats = {
+  fps: number;
+  bitrateKbps: number;
+  framesSent: number;
+  framesAcked: number;
+  lastFrameBytes: number;
+  queueDepth: number;
+};
+
 type DeviceForm = {
   name: string;
   transport: string;
@@ -71,6 +80,15 @@ const createId = () => {
   return `device-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 };
 
+const fallbackStats: SessionStats = {
+  fps: 0,
+  bitrateKbps: 0,
+  framesSent: 0,
+  framesAcked: 0,
+  lastFrameBytes: 0,
+  queueDepth: 0,
+};
+
 export default function HomePage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [devices, setDevices] = useState<AppStatus["devices"]>(fallbackStatus.devices);
@@ -80,6 +98,7 @@ export default function HomePage() {
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [codecSelection, setCodecSelection] = useState<CodecSelection | null>(null);
+  const [sessionStats, setSessionStats] = useState<SessionStats>(fallbackStats);
   const [tcpForm, setTcpForm] = useState({
     host: "",
     port: 1445,
@@ -100,6 +119,7 @@ export default function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    let statsTimer: ReturnType<typeof setInterval> | null = null;
 
     const loadStatus = async () => {
       try {
@@ -117,9 +137,28 @@ export default function HomePage() {
       }
     };
 
+    const loadSessionStats = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<SessionStats>("session_stats_snapshot");
+        if (!cancelled) {
+          setSessionStats(data);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setSessionStats(fallbackStats);
+        }
+      }
+    };
+
     loadStatus();
+    loadSessionStats();
+    statsTimer = setInterval(loadSessionStats, 2500);
     return () => {
       cancelled = true;
+      if (statsTimer) {
+        clearInterval(statsTimer);
+      }
     };
   }, []);
 
@@ -457,6 +496,14 @@ export default function HomePage() {
             <div>
               <div className="metric-label">Session</div>
               <div className="metric-value">{sessionLabel}</div>
+            </div>
+            <div>
+              <div className="metric-label">Live FPS</div>
+              <div className="metric-value">{sessionStats.fps.toFixed(1)}</div>
+            </div>
+            <div>
+              <div className="metric-label">Bitrate</div>
+              <div className="metric-value">{sessionStats.bitrateKbps} kbps</div>
             </div>
           </div>
         </section>
