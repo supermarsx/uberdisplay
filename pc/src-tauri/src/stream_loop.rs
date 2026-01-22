@@ -24,6 +24,7 @@ pub fn start_streaming(
     bitrate_kbps: u32,
     fps: u32,
     keyframe_interval: u32,
+    display_target_id: Option<String>,
 ) -> Result<(), String> {
     if running_flag().swap(true, Ordering::SeqCst) {
         return Ok(());
@@ -31,7 +32,15 @@ pub fn start_streaming(
 
     thread::spawn(move || {
         let mut encoder =
-            match MfEncoder::new(codec_id, width, height, bitrate_kbps, fps, keyframe_interval) {
+            match MfEncoder::new(
+                codec_id,
+                width,
+                height,
+                bitrate_kbps,
+                fps,
+                keyframe_interval,
+                display_target_id,
+            ) {
                 Ok(encoder) => encoder,
                 Err(_) => return,
             };

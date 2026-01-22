@@ -46,6 +46,17 @@ type SessionStats = {
   captureScale: string;
 };
 
+type DisplayInfo = {
+  id: string;
+  name: string;
+  active: boolean;
+  primary: boolean;
+  width: number;
+  height: number;
+  refreshHz: number;
+  isVirtual: boolean;
+};
+
 type DeviceForm = {
   name: string;
   transport: string;
@@ -104,6 +115,10 @@ const fallbackStats: SessionStats = {
 export default function HomePage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [devices, setDevices] = useState<AppStatus["devices"]>(fallbackStatus.devices);
+  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
+  const [virtualDisplays, setVirtualDisplays] = useState<DisplayInfo[]>([]);
+  const [displayTarget, setDisplayTarget] = useState("auto");
+  const [virtualDisplayLabel, setVirtualDisplayLabel] = useState("UberDisplay");
   const [pairingOpen, setPairingOpen] = useState(false);
   const [form, setForm] = useState<DeviceForm>(initialForm);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +164,34 @@ export default function HomePage() {
       }
     };
 
+    const loadDisplays = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<DisplayInfo[]>("list_displays");
+        if (!cancelled) {
+          setDisplays(data ?? []);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setDisplays([]);
+        }
+      }
+    };
+
+    const loadVirtualDisplays = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<DisplayInfo[]>("list_virtual_displays");
+        if (!cancelled) {
+          setVirtualDisplays(data ?? []);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setVirtualDisplays([]);
+        }
+      }
+    };
+
     const loadSessionStats = async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
@@ -164,6 +207,8 @@ export default function HomePage() {
     };
 
     loadStatus();
+    loadDisplays();
+    loadVirtualDisplays();
     loadSessionStats();
     statsTimer = setInterval(loadSessionStats, 2500);
     return () => {
@@ -388,6 +433,40 @@ export default function HomePage() {
       setError(null);
     } catch (err) {
       setError("Unable to disconnect TCP.");
+      console.error(err);
+    }
+  };
+
+  const handleDisplayTargetSave = async () => {
+    try {
+      const payload = displayTarget === "auto" ? null : displayTarget;
+      await invokeTauri("set_session_display_target", { displayId: payload });
+      setNotice("Display target updated.");
+      setError(null);
+    } catch (err) {
+      setError("Unable to update display target.");
+      console.error(err);
+    }
+  };
+
+  const handleCreateVirtualDisplay = async () => {
+    try {
+      await invokeTauri("create_virtual_display", { label: virtualDisplayLabel });
+      setNotice("Virtual display creation requested.");
+      setError(null);
+    } catch (err) {
+      setError("Unable to create virtual display.");
+      console.error(err);
+    }
+  };
+
+  const handleRemoveVirtualDisplay = async (displayId: string) => {
+    try {
+      await invokeTauri("remove_virtual_display", { displayId });
+      setNotice("Virtual display removal requested.");
+      setError(null);
+    } catch (err) {
+      setError("Unable to remove virtual display.");
       console.error(err);
     }
   };
@@ -991,6 +1070,78 @@ export default function HomePage() {
               />
               Keyboard
             </label>
+          </div>
+        </section>
+
+        <section className="card status-card">
+          <div className="card-header">
+            <div className="card-title">Display Targets</div>
+            <div className="card-subtitle">Assign sessions to a display output</div>
+          </div>
+          <div className="form-grid">
+            <label className="form-field">
+              <span className="form-label">Target Display</span>
+              <select
+                className="form-input"
+                value={displayTarget}
+                onChange={(event) => setDisplayTarget(event.target.value)}
+              >
+                <option value="auto">Auto (Primary)</option>
+                {displays.map((display) => (
+                  <option key={display.id} value={display.id}>
+                    {display.name || display.id} ({display.width}x{display.height}@{display.refreshHz}Hz)
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={handleDisplayTargetSave}>Apply</button>
+            </div>
+          </div>
+          <div className="divider" />
+          <div className="card-header">
+            <div className="card-title">Virtual Displays</div>
+            <div className="card-subtitle">Create or remove virtual outputs</div>
+          </div>
+          <div className="form-grid">
+            <label className="form-field">
+              <span className="form-label">Label</span>
+              <input
+                className="form-input"
+                value={virtualDisplayLabel}
+                onChange={(event) => setVirtualDisplayLabel(event.target.value)}
+              />
+            </label>
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={handleCreateVirtualDisplay}>Create</button>
+            </div>
+          </div>
+          <div className="device-list">
+            {virtualDisplays.length === 0 ? (
+              <div className="device-row muted">
+                <div>
+                  <div className="device-name">No virtual displays detected</div>
+                  <div className="device-meta">Install the driver and create a display.</div>
+                </div>
+              </div>
+            ) : (
+              virtualDisplays.map((display) => (
+                <div className="device-row" key={display.id}>
+                  <div>
+                    <div className="device-name">{display.name || display.id}</div>
+                    <div className="device-meta">
+                      {display.width} x {display.height} @ {display.refreshHz} Hz
+                      {display.active ? " • Active" : ""}
+                    </div>
+                  </div>
+                  <div className="device-actions">
+                    <button className="ghost-button" type="button" onClick={() => handleRemoveVirtualDisplay(display.id)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </main>

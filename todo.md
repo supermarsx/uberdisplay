@@ -270,11 +270,15 @@
 
 ## Virtual Display + Multi-Screen
 - [x] Add virtual display manager command stubs (create/remove/list)
-- [ ] Integrate virtual display driver control (create/remove modes via driver IPC)
+- [x] Integrate virtual display driver control (create/remove + mode enumeration via IPC)
 - [ ] Add driver install/check hooks for virtual display driver
-- [ ] Add per-session display assignment (virtual/physical/mirror)
+- [x] Add display target selection UI + command stub
+- [x] Wire per-session display assignment into capture pipeline
 - [ ] Support multiple concurrent sessions with per-display routing
-- [ ] Add UI for display selection + status
+- [x] Add UI for display selection + status
+- [ ] Add display modes UI and per-display mode switching
+- [ ] Add driver IPC availability probe + retry/backoff for create/remove/mode calls
+- [ ] Wire display mode switch command to driver IPC and refresh display inventory
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats

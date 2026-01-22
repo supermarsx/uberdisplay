@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap');
+
 :root {
   color-scheme: dark;
   --ink-900: #12110f;
@@ -18,7 +20,7 @@
   --radius-sm: 999px;
   --font-ui: 'Inter', sans-serif;
   --font-display: 'Libre Baskerville', serif;
-  --font-script: 'Parisienne', cursive;
+  --font-script: 'Fraunces', 'Libre Baskerville', serif;
 }
 
 * {
@@ -112,6 +114,7 @@ body {
   min-height: 0;
   overflow: auto;
   padding: 18px 22px;
+  scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(230, 222, 201, 0.35) transparent;
 }
@@ -368,10 +371,11 @@ body {
   max-height: clamp(220px, 40vh, 420px);
   overflow: auto;
   padding-right: 4px;
+  scroll-behavior: smooth;
 }
 
 .log-list::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .log-list::-webkit-scrollbar-track {
@@ -598,7 +602,7 @@ body {
 }
 
 .content-grid::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .content-grid::-webkit-scrollbar-track {

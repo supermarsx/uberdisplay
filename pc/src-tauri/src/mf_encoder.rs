@@ -49,6 +49,7 @@ pub struct MfEncoder {
     last_error: Option<String>,
     #[cfg(windows)]
     use_dxgi_surface: bool,
+    pub display_target_id: Option<String>,
 }
 
 impl MfEncoder {
@@ -59,6 +60,7 @@ impl MfEncoder {
         bitrate_kbps: u32,
         fps: u32,
         keyframe_interval: u32,
+        display_target_id: Option<String>,
     ) -> Result<Self, String> {
         let aligned_width = (width.max(2)) & !1;
         let aligned_height = (height.max(2)) & !1;
@@ -94,6 +96,7 @@ impl MfEncoder {
                     last_error: None,
                     #[cfg(windows)]
                     use_dxgi_surface: init.use_dxgi_surface,
+                    display_target_id,
                 })
             }
             _ => Err("Media Foundation encoder supports H.264/H.265 only".to_string()),
@@ -408,7 +411,11 @@ impl MfEncoder {
     fn encode_mf_frame(&mut self) -> Option<(Vec<u8>, u64)> {
         let transform = self.transform.as_ref()?;
         let buffer = if self.use_dxgi_surface {
-            match capture::capture_dxgi_surface(self.width, self.height) {
+            match capture::capture_dxgi_surface(
+                self.width,
+                self.height,
+                self.display_target_id.as_deref(),
+            ) {
                 Ok(frame) => {
                     let buffer = unsafe {
                         MFCreateDXGISurfaceBuffer(
@@ -433,7 +440,12 @@ impl MfEncoder {
                 }
             }
         } else {
-            let nv12 = capture::capture_nv12(self.width, self.height).ok();
+            let nv12 = capture::capture_nv12_with_target(
+                self.width,
+                self.height,
+                self.display_target_id.as_deref(),
+            )
+            .ok();
             match create_nv12_sample_with_data(self.width, self.height, nv12.as_deref()) {
                 Ok(buffer) => buffer,
                 Err(err) => {

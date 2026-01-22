@@ -20,6 +20,14 @@ pub struct DisplayInfo {
     pub is_virtual: bool,
 }
 
+#[derive(Debug, Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DisplayMode {
+    pub width: i32,
+    pub height: i32,
+    pub refresh_hz: i32,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransportStatus {

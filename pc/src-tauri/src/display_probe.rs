@@ -1,4 +1,4 @@
-use crate::app_state::DisplayInfo;
+use crate::app_state::{DisplayInfo, DisplayMode};
 
 #[cfg(windows)]
 pub fn list_displays() -> Vec<DisplayInfo> {
@@ -51,6 +51,54 @@ pub fn list_displays() -> Vec<DisplayInfo> {
 }
 
 #[cfg(windows)]
+pub fn list_display_modes(display_id: &str) -> Vec<DisplayMode> {
+    use std::collections::HashSet;
+    use windows::Win32::Graphics::Gdi::{
+        EnumDisplaySettingsExW, DEVMODEW, ENUM_DISPLAY_SETTINGS_FLAGS,
+        ENUM_DISPLAY_SETTINGS_MODE,
+    };
+    use windows::core::PCWSTR;
+
+    let name_wide = to_wide(display_id);
+    let mut mode_index = 0u32;
+    let mut seen = HashSet::new();
+    let mut modes = Vec::new();
+
+    loop {
+        let mut devmode = DEVMODEW::default();
+        devmode.dmSize = std::mem::size_of::<DEVMODEW>() as u16;
+        let ok = unsafe {
+            EnumDisplaySettingsExW(
+                PCWSTR::from_raw(name_wide.as_ptr()),
+                ENUM_DISPLAY_SETTINGS_MODE(mode_index),
+                &mut devmode,
+                ENUM_DISPLAY_SETTINGS_FLAGS(0),
+            )
+        };
+        if !ok.as_bool() {
+            break;
+        }
+
+        let mode = DisplayMode {
+            width: devmode.dmPelsWidth as i32,
+            height: devmode.dmPelsHeight as i32,
+            refresh_hz: devmode.dmDisplayFrequency as i32,
+        };
+        if seen.insert((mode.width, mode.height, mode.refresh_hz)) {
+            modes.push(mode);
+        }
+        mode_index = mode_index.saturating_add(1);
+    }
+
+    modes
+}
+
+#[cfg(not(windows))]
+pub fn list_display_modes(_display_id: &str) -> Vec<DisplayMode> {
+    Vec::new()
+}
+
+#[cfg(windows)]
 fn query_display_mode(device_name: &[u16]) -> (i32, i32, i32) {
     use windows::Win32::Graphics::Gdi::{
         EnumDisplaySettingsExW, DEVMODEW, ENUM_CURRENT_SETTINGS, ENUM_DISPLAY_SETTINGS_FLAGS,
@@ -90,4 +138,11 @@ fn looks_like_virtual_driver(device_name: &str) -> bool {
 fn utf16_to_string(buffer: &[u16]) -> String {
     let len = buffer.iter().position(|&ch| ch == 0).unwrap_or(buffer.len());
     String::from_utf16_lossy(&buffer[..len])
+}
+
+#[cfg(windows)]
+fn to_wide(value: &str) -> Vec<u16> {
+    let mut wide: Vec<u16> = value.encode_utf16().collect();
+    wide.push(0);
+    wide
 }

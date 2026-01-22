@@ -5,6 +5,7 @@ mod diagnostics_report;
 mod codec;
 mod capture;
 mod display_probe;
+mod driver_ipc;
 mod encoder;
 mod device_registry;
 mod driver_probe;
@@ -140,13 +141,37 @@ fn list_virtual_displays() -> Vec<app_state::DisplayInfo> {
 }
 
 #[tauri::command]
+fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
+    match driver_ipc::list_modes(&display_id) {
+        Ok(value) => {
+            let parsed: Result<Vec<app_state::DisplayMode>, _> = serde_json::from_value(value);
+            if let Ok(modes) = parsed {
+                return modes;
+            }
+        }
+        Err(err) => {
+            let _ = host_log::append_log(&app_handle, format!("Driver IPC list modes failed: {err}"));
+        }
+    }
+    display_probe::list_display_modes(&display_id)
+}
+
+#[tauri::command]
 fn create_virtual_display(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
+    driver_ipc::create_display(&label).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver IPC create failed: {err}"));
+        err
+    })?;
     let _ = host_log::append_log(&app_handle, format!("Create virtual display requested: {label}"));
     Ok(())
 }
 
 #[tauri::command]
 fn remove_virtual_display(app_handle: tauri::AppHandle, display_id: String) -> Result<(), String> {
+    driver_ipc::remove_display(&display_id).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver IPC remove failed: {err}"));
+        err
+    })?;
     let _ = host_log::append_log(&app_handle, format!("Remove virtual display requested: {display_id}"));
     Ok(())
 }
@@ -187,6 +212,7 @@ fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     let state = session_state::snapshot();
     let codec_id = state.codec_id.ok_or_else(|| "No negotiated codec".to_string())?;
     let config = session_state::config_snapshot().ok_or_else(|| "No session config".to_string())?;
+    let display_target_id = state.display_target_id.clone();
     let settings = settings_registry::load_settings(&app_handle);
     let fps = settings.refresh_cap_hz.max(1) as u32;
     let bitrate_kbps = (settings.quality as u32 * 80).max(500);
@@ -199,6 +225,7 @@ fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
         bitrate_kbps,
         fps,
         keyframe_interval,
+        display_target_id,
     )?;
     session_state::update_lifecycle(app_state::SessionLifecycle::Streaming);
     let _ = host_log::append_log(&app_handle, "Start session requested");
@@ -393,6 +420,7 @@ fn main() {
             export_diagnostics,
             list_displays,
             list_virtual_displays,
+            list_display_modes,
             create_virtual_display,
             remove_virtual_display,
             set_session_display_target,

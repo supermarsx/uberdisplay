@@ -16,19 +16,21 @@ use windows::Win32::Graphics::Direct3D11::{
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{
-    BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits, GetDC,
-    ReleaseDC, SelectObject, SetStretchBltMode, StretchBlt, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
-    DIB_RGB_COLORS, HALFTONE, SRCCOPY,
+    BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, CreateDCW, DeleteDC, DeleteObject,
+    EnumDisplaySettingsExW, GetDIBits, GetDC, ReleaseDC, SelectObject, SetStretchBltMode,
+    StretchBlt, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HALFTONE, SRCCOPY,
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Dxgi::{
-    IDXGIAdapter, IDXGIDevice, IDXGIOutput1, IDXGIOutputDuplication, IDXGIResource,
-    DXGI_ERROR_ACCESS_LOST, DXGI_ERROR_WAIT_TIMEOUT, DXGI_OUTDUPL_FRAME_INFO,
+    IDXGIAdapter, IDXGIDevice, IDXGIOutput, IDXGIOutput1, IDXGIOutputDuplication, IDXGIResource,
+    DXGI_ERROR_ACCESS_LOST, DXGI_ERROR_WAIT_TIMEOUT, DXGI_OUTDUPL_FRAME_INFO, DXGI_OUTPUT_DESC,
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 #[cfg(windows)]
 use windows::core::Interface;
+#[cfg(windows)]
+use windows::core::PCWSTR;
 #[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
 
@@ -36,9 +38,24 @@ use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_
 pub fn capture_nv12(width: i32, height: i32) -> Result<Vec<u8>, String> {
     let aligned_width = width.max(2) & !1;
     let aligned_height = height.max(2) & !1;
-    let bgra = match capture_bgra_dxgi(aligned_width, aligned_height) {
+    let bgra = match capture_bgra_dxgi(aligned_width, aligned_height, None) {
         Ok(frame) => frame,
-        Err(_) => capture_bgra_gdi(aligned_width, aligned_height)?,
+        Err(_) => capture_bgra_gdi(aligned_width, aligned_height, None)?,
+    };
+    Ok(bgra_to_nv12(&bgra, aligned_width, aligned_height))
+}
+
+#[cfg(windows)]
+pub fn capture_nv12_with_target(
+    width: i32,
+    height: i32,
+    target_id: Option<&str>,
+) -> Result<Vec<u8>, String> {
+    let aligned_width = width.max(2) & !1;
+    let aligned_height = height.max(2) & !1;
+    let bgra = match capture_bgra_dxgi(aligned_width, aligned_height, target_id) {
+        Ok(frame) => frame,
+        Err(_) => capture_bgra_gdi(aligned_width, aligned_height, target_id)?,
     };
     Ok(bgra_to_nv12(&bgra, aligned_width, aligned_height))
 }
@@ -49,9 +66,22 @@ pub fn capture_nv12(_width: i32, _height: i32) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(windows)]
-fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
+fn capture_bgra_gdi(width: i32, height: i32, target_id: Option<&str>) -> Result<Vec<u8>, String> {
     let hwnd = HWND(0);
-    let screen_dc = unsafe { GetDC(hwnd) };
+    let screen_dc = if let Some(name) = target_id {
+        let driver_wide = to_wide("DISPLAY");
+        let name_wide = to_wide(name);
+        unsafe {
+            CreateDCW(
+                PCWSTR::from_raw(driver_wide.as_ptr()),
+                PCWSTR::from_raw(name_wide.as_ptr()),
+                PCWSTR::null(),
+                None,
+            )
+        }
+    } else {
+        unsafe { GetDC(hwnd) }
+    };
     if screen_dc.0 == 0 {
         return Err("GetDC failed".to_string());
     }
@@ -72,8 +102,11 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
     }
 
     let old = unsafe { SelectObject(mem_dc, bitmap) };
-    let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-    let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    let (screen_width, screen_height) = if let Some(name) = target_id {
+        query_display_dimensions(name)
+    } else {
+        (unsafe { GetSystemMetrics(SM_CXSCREEN) }, unsafe { GetSystemMetrics(SM_CYSCREEN) })
+    };
     let scale_mode = if screen_width == width && screen_height == height {
         "1:1"
     } else {
@@ -135,7 +168,11 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
         SelectObject(mem_dc, old);
         DeleteObject(bitmap);
         DeleteDC(mem_dc);
-        ReleaseDC(hwnd, screen_dc);
+        if target_id.is_some() {
+            DeleteDC(screen_dc);
+        } else {
+            ReleaseDC(hwnd, screen_dc);
+        }
     }
 
     update_capture_info("GDI", scale_mode);
@@ -199,6 +236,68 @@ fn clamp_u8(value: i32) -> u8 {
 }
 
 #[cfg(windows)]
+fn select_output(adapter: &IDXGIAdapter, target_id: Option<&str>) -> Result<IDXGIOutput1, String> {
+    let mut index = 0u32;
+    loop {
+        let output: IDXGIOutput = match unsafe { adapter.EnumOutputs(index) } {
+            Ok(output) => output,
+            Err(_) => break,
+        };
+        let output1: IDXGIOutput1 = output
+            .cast()
+            .map_err(|err| format!("DXGI output cast failed: 0x{:08x}", err.code().0))?;
+        let mut desc = DXGI_OUTPUT_DESC::default();
+        unsafe {
+            output
+                .GetDesc(&mut desc)
+                .map_err(|err| format!("DXGI GetDesc failed: 0x{:08x}", err.code().0))?;
+        }
+        let name = utf16_to_string(&desc.DeviceName);
+        if target_id.map(|target| target.eq_ignore_ascii_case(&name)).unwrap_or(true) {
+            return Ok(output1);
+        }
+        index = index.saturating_add(1);
+    }
+    Err("DXGI output not found".to_string())
+}
+
+#[cfg(windows)]
+fn query_display_dimensions(display_id: &str) -> (i32, i32) {
+    use windows::Win32::Graphics::Gdi::{
+        EnumDisplaySettingsExW, DEVMODEW, ENUM_CURRENT_SETTINGS, ENUM_DISPLAY_SETTINGS_FLAGS,
+    };
+    let name_wide = to_wide(display_id);
+    let mut devmode = DEVMODEW::default();
+    devmode.dmSize = std::mem::size_of::<DEVMODEW>() as u16;
+    let ok = unsafe {
+        EnumDisplaySettingsExW(
+            PCWSTR::from_raw(name_wide.as_ptr()),
+            ENUM_CURRENT_SETTINGS,
+            &mut devmode,
+            ENUM_DISPLAY_SETTINGS_FLAGS(0),
+        )
+    };
+    if ok.as_bool() {
+        (devmode.dmPelsWidth as i32, devmode.dmPelsHeight as i32)
+    } else {
+        (unsafe { GetSystemMetrics(SM_CXSCREEN) }, unsafe { GetSystemMetrics(SM_CYSCREEN) })
+    }
+}
+
+#[cfg(windows)]
+fn to_wide(value: &str) -> Vec<u16> {
+    let mut wide: Vec<u16> = value.encode_utf16().collect();
+    wide.push(0);
+    wide
+}
+
+#[cfg(windows)]
+fn utf16_to_string(buffer: &[u16]) -> String {
+    let len = buffer.iter().position(|&ch| ch == 0).unwrap_or(buffer.len());
+    String::from_utf16_lossy(&buffer[..len])
+}
+
+#[cfg(windows)]
 struct DxgiCapture {
     #[allow(dead_code)]
     device: ID3D11Device,
@@ -213,6 +312,7 @@ struct DxgiCapture {
     last_frame_bytes: u32,
     capture_path: String,
     capture_scale: String,
+    target_id: Option<String>,
 }
 
 #[cfg(windows)]
@@ -234,16 +334,24 @@ impl Drop for DxgiFrame {
 static DXGI_CAPTURE: OnceLock<Mutex<Option<DxgiCapture>>> = OnceLock::new();
 
 #[cfg(windows)]
-fn capture_bgra_dxgi(width: i32, height: i32) -> Result<Vec<u8>, String> {
+fn capture_bgra_dxgi(
+    width: i32,
+    height: i32,
+    target_id: Option<&str>,
+) -> Result<Vec<u8>, String> {
     let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
     let mut guard = store.lock().map_err(|_| "DXGI lock poisoned".to_string())?;
 
     let needs_init = match guard.as_ref() {
-        Some(capture) => capture.width != width || capture.height != height,
+        Some(capture) => {
+            capture.width != width
+                || capture.height != height
+                || capture.target_id.as_deref() != target_id
+        }
         None => true,
     };
     if needs_init {
-        *guard = Some(init_dxgi_capture(width, height)?);
+        *guard = Some(init_dxgi_capture(width, height, target_id)?);
     }
 
     let capture = guard.as_mut().ok_or_else(|| "DXGI capture not initialized".to_string())?;
@@ -262,16 +370,24 @@ fn capture_bgra_dxgi(width: i32, height: i32) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(windows)]
-pub fn capture_dxgi_surface(width: i32, height: i32) -> Result<DxgiFrame, String> {
+pub fn capture_dxgi_surface(
+    width: i32,
+    height: i32,
+    target_id: Option<&str>,
+) -> Result<DxgiFrame, String> {
     let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
     let mut guard = store.lock().map_err(|_| "DXGI lock poisoned".to_string())?;
 
     let needs_init = match guard.as_ref() {
-        Some(capture) => capture.width != width || capture.height != height,
+        Some(capture) => {
+            capture.width != width
+                || capture.height != height
+                || capture.target_id.as_deref() != target_id
+        }
         None => true,
     };
     if needs_init {
-        *guard = Some(init_dxgi_capture(width, height)?);
+        *guard = Some(init_dxgi_capture(width, height, target_id)?);
     }
 
     let capture = guard.as_mut().ok_or_else(|| "DXGI capture not initialized".to_string())?;
@@ -286,7 +402,11 @@ pub fn capture_dxgi_surface(width: i32, height: i32) -> Result<DxgiFrame, String
 }
 
 #[cfg(windows)]
-fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
+fn init_dxgi_capture(
+    width: i32,
+    height: i32,
+    target_id: Option<&str>,
+) -> Result<DxgiCapture, String> {
     let mut device: Option<ID3D11Device> = None;
     let mut context: Option<ID3D11DeviceContext> = None;
     unsafe {
@@ -311,11 +431,7 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
         .map_err(|err| format!("DXGI device cast failed: 0x{:08x}", err.code().0))?;
     let adapter: IDXGIAdapter = unsafe { dxgi_device.GetAdapter() }
         .map_err(|err| format!("DXGI GetAdapter failed: 0x{:08x}", err.code().0))?;
-    let output = unsafe { adapter.EnumOutputs(0) }
-        .map_err(|err| format!("DXGI EnumOutputs failed: 0x{:08x}", err.code().0))?;
-    let output1: IDXGIOutput1 = output
-        .cast()
-        .map_err(|err| format!("DXGI output cast failed: 0x{:08x}", err.code().0))?;
+    let output1 = select_output(&adapter, target_id)?;
     let duplication = unsafe { output1.DuplicateOutput(&device) }
         .map_err(|err| format!("DXGI DuplicateOutput failed: 0x{:08x}", err.code().0))?;
 
@@ -355,6 +471,7 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
         last_frame_bytes: 0,
         capture_path: "DXGI".to_string(),
         capture_scale: "1:1".to_string(),
+        target_id: target_id.map(|value| value.to_string()),
     })
 }
 
