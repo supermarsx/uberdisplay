@@ -142,6 +142,17 @@ export default function DiagnosticsPage() {
     }
   };
 
+  const handleExportDiagnostics = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const path = await invoke<string>("export_diagnostics");
+      setNotice(`Diagnostics exported to ${path}`);
+    } catch (err) {
+      setError("Unable to export diagnostics.");
+      console.error(err);
+    }
+  };
+
   const handleLogDetails = async (message: string) => {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
@@ -265,6 +276,7 @@ export default function DiagnosticsPage() {
           <div className="divider" />
           <div className="connect-actions">
             <button className="secondary-button" type="button" onClick={handleExportLogs}>Export Logs</button>
+            <button className="secondary-button" type="button" onClick={handleExportDiagnostics}>Export Diagnostics</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
           {notice && <div className="form-note">{notice}</div>}

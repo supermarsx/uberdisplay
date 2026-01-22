@@ -7,11 +7,11 @@ use windows::core::GUID;
 #[cfg(windows)]
 use windows::Win32::Media::MediaFoundation::{
     IMFActivate, IMFMediaBuffer, IMFMediaType, IMFTransform, MFCreateMediaType, MFCreateMemoryBuffer,
-    MFCreateSample, MFShutdown, MFStartup, MFTEnumEx,
+    MFCreateSample, MFCreateDXGISurfaceBuffer, MFShutdown, MFStartup, MFTEnumEx,
     MFT_OUTPUT_DATA_BUFFER, MFT_ENUM_FLAG_LOCALMFT, MFT_ENUM_FLAG_SYNCMFT,
     MFT_MESSAGE_COMMAND_FLUSH, MFT_MESSAGE_COMMAND_DRAIN, MFT_MESSAGE_NOTIFY_BEGIN_STREAMING,
     MFT_MESSAGE_NOTIFY_START_OF_STREAM, MFT_REGISTER_TYPE_INFO, MFT_CATEGORY_VIDEO_ENCODER,
-    MFMediaType_Video, MFVideoFormat_H264, MFVideoFormat_HEVC, MFVideoFormat_NV12,
+    MFMediaType_Video, MFVideoFormat_H264, MFVideoFormat_HEVC, MFVideoFormat_NV12, MFVideoFormat_ARGB32,
     MF_E_TRANSFORM_NEED_MORE_INPUT, MF_MT_AVG_BITRATE, MF_MT_FRAME_RATE, MF_MT_FRAME_SIZE,
     MF_MT_INTERLACE_MODE, MF_MT_MAJOR_TYPE, MF_MT_PIXEL_ASPECT_RATIO, MF_MT_SUBTYPE,
     MFVideoInterlace_Progressive, MF_VERSION,
@@ -20,6 +20,10 @@ use windows::Win32::Media::MediaFoundation::{
 use windows::Win32::System::Com::{
     CoInitializeEx, CoTaskMemFree, CoUninitialize, COINIT_MULTITHREADED,
 };
+#[cfg(windows)]
+use windows::core::Interface;
+#[cfg(windows)]
+use windows::Win32::Graphics::Direct3D11::ID3D11Texture2D;
 #[cfg(windows)]
 use std::mem::ManuallyDrop;
 
@@ -43,6 +47,8 @@ pub struct MfEncoder {
     output_buffer_len: u32,
     #[cfg(windows)]
     last_error: Option<String>,
+    #[cfg(windows)]
+    use_dxgi_surface: bool,
 }
 
 impl MfEncoder {
@@ -86,6 +92,8 @@ impl MfEncoder {
                     output_buffer_len: init.output_buffer_len,
                     #[cfg(windows)]
                     last_error: None,
+                    #[cfg(windows)]
+                    use_dxgi_surface: init.use_dxgi_surface,
                 })
             }
             _ => Err("Media Foundation encoder supports H.264/H.265 only".to_string()),
@@ -149,6 +157,7 @@ struct MfInit {
     encoder_available: bool,
     transform: Option<IMFTransform>,
     output_buffer_len: u32,
+    use_dxgi_surface: bool,
 }
 
 #[cfg(windows)]
@@ -173,8 +182,8 @@ fn init_media_foundation(
     }
     let mf_started = true;
 
-    let (transform, output_buffer_len) =
-        init_transform(codec_id, width, height, bitrate_kbps, fps).unwrap_or((None, 0));
+    let (transform, output_buffer_len, use_dxgi_surface) =
+        init_transform(codec_id, width, height, bitrate_kbps, fps).unwrap_or((None, 0, false));
     let encoder_available = transform.is_some();
     Ok(MfInit {
         com_initialized,
@@ -182,6 +191,7 @@ fn init_media_foundation(
         encoder_available,
         transform,
         output_buffer_len,
+        use_dxgi_surface,
     })
 }
 
@@ -192,11 +202,11 @@ fn init_transform(
     height: i32,
     bitrate_kbps: u32,
     fps: u32,
-) -> Result<(Option<IMFTransform>, u32), String> {
+) -> Result<(Option<IMFTransform>, u32, bool), String> {
     let output_guid: GUID = match codec_id {
         CodecId::H264 => MFVideoFormat_H264,
         CodecId::H265 => MFVideoFormat_HEVC,
-        _ => return Ok((None, 0)),
+        _ => return Ok((None, 0, false)),
     };
 
     let output_type = MFT_REGISTER_TYPE_INFO {
@@ -219,7 +229,7 @@ fn init_transform(
     }
     .map_err(|err| format!("MFEnumEx failed: 0x{:08x}", err.code().0))?;
     if count == 0 || activate.is_null() {
-        return Ok((None, 0));
+        return Ok((None, 0, false));
     }
 
     let mut transform: Option<IMFTransform> = None;
@@ -239,15 +249,24 @@ fn init_transform(
     }
 
     let Some(transform) = transform else {
-        return Ok((None, 0));
+        return Ok((None, 0, false));
     };
 
-    let input_type = build_input_type(width, height, fps)?;
+    let mut use_dxgi_surface = false;
+    let input_type = build_input_type(MFVideoFormat_ARGB32, width, height, fps)?;
+    let input_result = unsafe { transform.SetInputType(0, &input_type, 0) };
+    if input_result.is_ok() {
+        use_dxgi_surface = true;
+    } else {
+        let nv12_input = build_input_type(MFVideoFormat_NV12, width, height, fps)?;
+        unsafe {
+            transform
+                .SetInputType(0, &nv12_input, 0)
+                .map_err(|err| format!("MF SetInputType failed: 0x{:08x}", err.code().0))?;
+        }
+    }
     let output_type = build_output_type(codec_id, width, height, fps, bitrate_kbps)?;
     unsafe {
-        transform
-            .SetInputType(0, &input_type, 0)
-            .map_err(|err| format!("MF SetInputType failed: 0x{:08x}", err.code().0))?;
         transform
             .SetOutputType(0, &output_type, 0)
             .map_err(|err| format!("MF SetOutputType failed: 0x{:08x}", err.code().0))?;
@@ -258,11 +277,11 @@ fn init_transform(
     }
 
     let output_buffer_len = get_output_buffer_len(&transform);
-    Ok((Some(transform), output_buffer_len))
+    Ok((Some(transform), output_buffer_len, use_dxgi_surface))
 }
 
 #[cfg(windows)]
-fn build_input_type(width: i32, height: i32, fps: u32) -> Result<IMFMediaType, String> {
+fn build_input_type(subtype: GUID, width: i32, height: i32, fps: u32) -> Result<IMFMediaType, String> {
     let media_type = unsafe { MFCreateMediaType() }
         .map_err(|err| format!("MFCreateMediaType failed: 0x{:08x}", err.code().0))?;
     unsafe {
@@ -270,7 +289,7 @@ fn build_input_type(width: i32, height: i32, fps: u32) -> Result<IMFMediaType, S
             .SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video)
             .map_err(|err| format!("MF Set major type failed: 0x{:08x}", err.code().0))?;
         media_type
-            .SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_NV12)
+            .SetGUID(&MF_MT_SUBTYPE, &subtype)
             .map_err(|err| format!("MF Set subtype failed: 0x{:08x}", err.code().0))?;
         set_attribute_size(&media_type, &MF_MT_FRAME_SIZE, width as u32, height as u32)?;
         set_attribute_ratio(&media_type, &MF_MT_FRAME_RATE, fps, 1)?;
@@ -388,12 +407,39 @@ fn drain_output(transform: &IMFTransform, output_buffer_len: u32) -> Result<Vec<
 impl MfEncoder {
     fn encode_mf_frame(&mut self) -> Option<(Vec<u8>, u64)> {
         let transform = self.transform.as_ref()?;
-        let nv12 = capture::capture_nv12(self.width, self.height).ok();
-        let buffer = match create_nv12_sample_with_data(self.width, self.height, nv12.as_deref()) {
-            Ok(buffer) => buffer,
-            Err(err) => {
-                self.last_error = Some(err);
-                return None;
+        let buffer = if self.use_dxgi_surface {
+            match capture::capture_dxgi_surface(self.width, self.height) {
+                Ok(frame) => {
+                    let buffer = unsafe {
+                        MFCreateDXGISurfaceBuffer(
+                            &ID3D11Texture2D::IID,
+                            &frame.texture,
+                            0,
+                            false,
+                        )
+                    };
+                    match buffer {
+                        Ok(buffer) => buffer,
+                        Err(err) => {
+                            self.last_error =
+                                Some(format!("MFCreateDXGISurfaceBuffer failed: 0x{:08x}", err.code().0));
+                            return None;
+                        }
+                    }
+                }
+                Err(err) => {
+                    self.last_error = Some(err);
+                    return None;
+                }
+            }
+        } else {
+            let nv12 = capture::capture_nv12(self.width, self.height).ok();
+            match create_nv12_sample_with_data(self.width, self.height, nv12.as_deref()) {
+                Ok(buffer) => buffer,
+                Err(err) => {
+                    self.last_error = Some(err);
+                    return None;
+                }
             }
         };
         let sample = match unsafe { MFCreateSample() } {

@@ -180,9 +180,9 @@ struct DxgiCapture {
 }
 
 #[cfg(windows)]
-struct DxgiFrame {
+pub struct DxgiFrame {
     duplication: IDXGIOutputDuplication,
-    texture: ID3D11Texture2D,
+    pub texture: ID3D11Texture2D,
 }
 
 #[cfg(windows)]
@@ -418,15 +418,4 @@ pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
 #[cfg(not(windows))]
 pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
     None
-}
-
-#[cfg(windows)]
-pub fn dxgi_surface_available() -> bool {
-    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
-    store.lock().ok().and_then(|guard| guard.as_ref()).is_some()
-}
-
-#[cfg(not(windows))]
-pub fn dxgi_surface_available() -> bool {
-    false
 }

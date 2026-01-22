@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app_state;
+mod diagnostics_report;
 mod codec;
 mod capture;
 mod encoder;
@@ -128,6 +129,15 @@ fn list_logs(app_handle: tauri::AppHandle) -> Vec<host_log::HostLogEntry> {
 fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
     let path = host_log::export_logs(&app_handle)?;
     let _ = host_log::append_log(&app_handle, "Exported logs");
+    Ok(path)
+}
+
+#[tauri::command]
+fn export_diagnostics(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let status = app_status(app_handle.clone());
+    let stats = session_state::stats_snapshot();
+    let path = diagnostics_report::export_report(&app_handle, status, stats)?;
+    let _ = host_log::append_log(&app_handle, "Exported diagnostics report");
     Ok(path)
 }
 
@@ -338,6 +348,7 @@ fn main() {
             negotiate_codec,
             list_logs,
             export_logs,
+            export_diagnostics,
             start_session,
             prepare_session,
             tcp_connect_and_configure,
