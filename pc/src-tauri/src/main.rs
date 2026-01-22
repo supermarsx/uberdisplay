@@ -138,7 +138,7 @@ fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     let settings = settings_registry::load_settings(&app_handle);
     let fps = settings.refresh_cap_hz.max(1) as u32;
     let bitrate_kbps = (settings.quality as u32 * 80).max(500);
-    let keyframe_interval = 60;
+    let keyframe_interval = settings.keyframe_interval.max(1) as u32;
     stream_loop::start_streaming(
         codec_id,
         config.encoder_id,

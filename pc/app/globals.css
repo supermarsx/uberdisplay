@@ -179,6 +179,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(30px, 3vw, 40px);
   max-width: 420px;
+  text-wrap: balance;
   position: relative;
   z-index: 1;
 }
@@ -607,6 +608,11 @@ body {
   .connect-card,
   .settings-card {
     grid-column: span 1;
+  }
+
+  .hero-title,
+  .hero-body {
+    max-width: 100%;
   }
 }
 

@@ -7,7 +7,7 @@ type AppStatus = {
   protocolVersion: number;
   driver: { installed: boolean; active: boolean };
   transport: { tcpListening: boolean; tcpConnections: number; aoapAttached: boolean };
-  settings: { codec: string; quality: number; refreshCapHz: number; inputMode: string };
+  settings: { codec: string; quality: number; refreshCapHz: number; keyframeInterval: number; inputMode: string };
   devices: Array<{
     id: string;
     name: string;
@@ -21,7 +21,7 @@ const fallbackStatus: AppStatus = {
   protocolVersion: 4,
   driver: { installed: false, active: false },
   transport: { tcpListening: false, tcpConnections: 0, aoapAttached: false },
-  settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, inputMode: "Touch + Pen" },
+  settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, keyframeInterval: 60, inputMode: "Touch + Pen" },
   devices: [],
 };
 
@@ -64,6 +64,7 @@ export default function PreferencesPage() {
         codec: form.codec,
         quality: Number(form.quality),
         refreshCapHz: Number(form.refreshCapHz),
+        keyframeInterval: Number(form.keyframeInterval),
         inputMode: form.inputMode,
       };
       const saved = await invoke<AppStatus["settings"]>("update_settings", { settings: payload });
@@ -121,6 +122,7 @@ export default function PreferencesPage() {
         status.settings.codec,
         `Quality ${status.settings.quality}%`,
         `Refresh cap ${status.settings.refreshCapHz} Hz`,
+        `Keyframe interval ${status.settings.keyframeInterval}f`,
       ],
     },
     {
@@ -214,6 +216,19 @@ export default function PreferencesPage() {
                   value={form.refreshCapHz}
                   onChange={(event) =>
                     setForm({ ...form, refreshCapHz: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Keyframe Interval (frames)</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={15}
+                  max={300}
+                  value={form.keyframeInterval}
+                  onChange={(event) =>
+                    setForm({ ...form, keyframeInterval: Number(event.target.value) })
                   }
                 />
               </label>

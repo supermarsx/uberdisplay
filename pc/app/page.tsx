@@ -7,7 +7,7 @@ type AppStatus = {
   protocolVersion: number;
   driver: { installed: boolean; active: boolean };
   transport: { tcpListening: boolean; tcpConnections: number; aoapAttached: boolean };
-  settings: { codec: string; quality: number; refreshCapHz: number; inputMode: string };
+  settings: { codec: string; quality: number; refreshCapHz: number; keyframeInterval: number; inputMode: string };
   session: { lifecycle: string };
   devices: Array<{
     id: string;
@@ -47,7 +47,7 @@ const fallbackStatus: AppStatus = {
   protocolVersion: 4,
   driver: { installed: false, active: false },
   transport: { tcpListening: true, tcpConnections: 0, aoapAttached: false },
-  settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, inputMode: "Touch + Pen" },
+  settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, keyframeInterval: 60, inputMode: "Touch + Pen" },
   session: { lifecycle: "idle" },
   devices: [],
 };
@@ -843,6 +843,10 @@ export default function HomePage() {
             <div className="setting">
               <div className="setting-label">Refresh</div>
               <div className="setting-value">Auto ({status.settings.refreshCapHz} Hz)</div>
+            </div>
+            <div className="setting">
+              <div className="setting-label">Keyframe</div>
+              <div className="setting-value">{status.settings.keyframeInterval} frames</div>
             </div>
             <div className="setting">
               <div className="setting-label">Input</div>

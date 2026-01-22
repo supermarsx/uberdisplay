@@ -21,6 +21,8 @@ pub struct HostSettings {
     pub codec: String,
     pub quality: u8,
     pub refresh_cap_hz: u16,
+    #[serde(default)]
+    pub keyframe_interval: u16,
     pub input_mode: String,
 }
 
@@ -30,6 +32,7 @@ impl Default for HostSettings {
             codec: "H.264 High".to_string(),
             quality: 80,
             refresh_cap_hz: 120,
+            keyframe_interval: 60,
             input_mode: "Touch + Pen".to_string(),
         }
     }

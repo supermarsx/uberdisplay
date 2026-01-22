@@ -223,6 +223,7 @@
 - [x] Show root caps in MainActivity status
 - [x] Add RootModuleStatus handshake caching
 - [x] Add RootModuleStatus cache test
+- [x] Fix hero "second canvas" text layout in single-column mode
 
 ## Codec + Streaming Pipeline
 - [x] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet
@@ -257,7 +258,7 @@
 - [x] Add session lifecycle states + error transitions for UI (idle/connecting/streaming/error)
 - [ ] Implement Media Foundation H.264 encoder with low-latency settings (no B-frames, short GOP)
 - [ ] Implement Media Foundation H.265 encoder (if supported)
-- [ ] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
+- [x] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
 - [ ] Add DXGI capture surface and GPU-friendly frame upload path
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
