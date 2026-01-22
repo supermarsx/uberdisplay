@@ -29,9 +29,12 @@ pub fn start_streaming(
         return Ok(());
     }
 
-    let mut encoder = MfEncoder::new(codec_id, width, height, bitrate_kbps, fps, keyframe_interval)?;
-
     thread::spawn(move || {
+        let mut encoder =
+            match MfEncoder::new(codec_id, width, height, bitrate_kbps, fps, keyframe_interval) {
+                Ok(encoder) => encoder,
+                Err(_) => return,
+            };
         let mut awaiting_ack = false;
         let mut last_send = Instant::now();
         let mut last_stats_at = Instant::now();
@@ -39,6 +42,7 @@ pub fn start_streaming(
         let mut window_frames = 0u32;
         let mut frames_sent = 0u64;
         let mut frames_acked = 0u64;
+        let mut mf_failures = 0u32;
         let max_wait_ms = (1000 / fps.max(1)).saturating_mul(2).max(8) as u64;
         while running_flag().load(Ordering::SeqCst) {
             if awaiting_ack {
@@ -58,6 +62,16 @@ pub fn start_streaming(
             }
 
             let payload = encoder.encode_dummy_frame();
+            if let Some(err) = encoder.take_last_error() {
+                mf_failures = mf_failures.saturating_add(1);
+                if mf_failures >= 3 {
+                    session_state::update_lifecycle(crate::app_state::SessionLifecycle::Error);
+                }
+                let _ = err;
+            } else if mf_failures > 0 {
+                mf_failures = 0;
+                session_state::update_lifecycle(crate::app_state::SessionLifecycle::Streaming);
+            }
             let payload_len = payload.len() as u32;
             let packet = build_frame_packet(FramePacket {
                 frame_meta: 0,

@@ -270,8 +270,10 @@
 - [ ] Implement Media Foundation encoder init + output for H.265 (if available)
 - [ ] Map encoder settings (bitrate, fps, keyframe interval) from HostSettings
 - [ ] Replace dummy frame sender with encoded output
+- [x] Add Media Foundation startup + encoder discovery (H.264/H.265)
+- [x] Add MF encoder activation + type configuration (NV12 -> H.264/H.265)
 - [ ] Add encoded sample timestamps and pacing derived from MF output
-- [ ] Add MF encoder error mapping to session state (init/output failure)
+- [x] Add MF encoder error mapping to session state (init/output failure)
 - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks
 
 ## Remote Input Controls (PC UI + Host)
