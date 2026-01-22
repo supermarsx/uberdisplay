@@ -243,7 +243,8 @@
 - [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
 - [x] Emit `Configure` v2 and `Frame` packets over TCP session
 - [x] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
-- [ ] Add session stop + reconnect handling on socket failure
+- [x] Add session stop on socket failure
+- [ ] Add reconnect handling on socket failure
 
 ## Advanced Codec Support (EVC / MPEG-5)
 - [ ] Add encoder backend evaluation for EVC (xeve) and MPEG-5 LCEVC

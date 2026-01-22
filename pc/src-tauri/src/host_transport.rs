@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 
@@ -11,6 +12,7 @@ use crate::protocol::packets::{parse_client_packet, ClientPacket};
 static TCP_STREAM: OnceLock<Mutex<Option<TcpStream>>> = OnceLock::new();
 static LAST_CLIENT_CODEC_MASK: OnceLock<Mutex<Option<u32>>> = OnceLock::new();
 static LAST_FRAME_DONE: OnceLock<Mutex<Option<i32>>> = OnceLock::new();
+static CONNECTED: OnceLock<AtomicBool> = OnceLock::new();
 
 fn stream_store() -> &'static Mutex<Option<TcpStream>> {
     TCP_STREAM.get_or_init(|| Mutex::new(None))
@@ -22,6 +24,10 @@ fn codec_mask_store() -> &'static Mutex<Option<u32>> {
 
 fn frame_done_store() -> &'static Mutex<Option<i32>> {
     LAST_FRAME_DONE.get_or_init(|| Mutex::new(None))
+}
+
+fn connected_flag() -> &'static AtomicBool {
+    CONNECTED.get_or_init(|| AtomicBool::new(false))
 }
 
 pub fn connect(addr: &str, port: u16) -> Result<(), String> {
@@ -43,12 +49,16 @@ pub fn connect(addr: &str, port: u16) -> Result<(), String> {
 
     let mut lock = stream_store().lock().map_err(|_| "Lock poisoned".to_string())?;
     *lock = Some(stream);
+    connected_flag().store(true, Ordering::SeqCst);
     Ok(())
 }
 
 pub fn disconnect() -> Result<(), String> {
     let mut lock = stream_store().lock().map_err(|_| "Lock poisoned".to_string())?;
     *lock = None;
+    connected_flag().store(false, Ordering::SeqCst);
+    crate::stream_loop::stop_streaming();
+    crate::session_state::reset_stats();
     Ok(())
 }
 
@@ -80,9 +90,9 @@ fn start_reader(mut stream: TcpStream) {
         let mut buffer = [0u8; 4096];
         loop {
             let read = match stream.read(&mut buffer) {
-                Ok(0) => return,
+                Ok(0) => break,
                 Ok(n) => n,
-                Err(_) => return,
+                Err(_) => break,
             };
             for byte in &buffer[..read] {
                 pending.push_back(*byte);
@@ -110,6 +120,13 @@ fn start_reader(mut stream: TcpStream) {
                 parse_stream_buffer(&mut stream_buffers[stream_index]);
             }
         }
+
+        if let Ok(mut lock) = stream_store().lock() {
+            *lock = None;
+        }
+        connected_flag().store(false, Ordering::SeqCst);
+        crate::stream_loop::stop_streaming();
+        crate::session_state::reset_stats();
     });
 }
 
