@@ -681,7 +681,7 @@ export default function PreferencesPage() {
                 className="form-input"
                 value={driverGpuName}
                 onChange={(event) => setDriverGpuName(event.target.value)}
-                placeholder="\"NVIDIA GeForce\""
+                placeholder='NVIDIA GeForce'
               />
             </label>
             <div className="form-actions">

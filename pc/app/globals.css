@@ -801,6 +801,8 @@ body {
   .hero {
     min-height: auto;
     align-self: stretch;
+    height: auto;
+    grid-auto-rows: min-content;
   }
 }
 
