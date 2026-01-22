@@ -30,20 +30,40 @@ type HostLogEntry = {
   message: string;
 };
 
+type SessionStats = {
+  fps: number;
+  bitrateKbps: number;
+  framesSent: number;
+  framesAcked: number;
+  lastFrameBytes: number;
+  queueDepth: number;
+};
+
 const fallbackLogs: HostLogEntry[] = [
   { timestamp: 0, message: "USB transport ready. AOAP handshake idle." },
   { timestamp: 0, message: "Wi-Fi listener active on port 1445." },
   { timestamp: 0, message: "Display driver installed, awaiting session." },
 ];
 
+const fallbackStats: SessionStats = {
+  fps: 0,
+  bitrateKbps: 0,
+  framesSent: 0,
+  framesAcked: 0,
+  lastFrameBytes: 0,
+  queueDepth: 0,
+};
+
 export default function DiagnosticsPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<HostLogEntry[]>(fallbackLogs);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sessionStats, setSessionStats] = useState<SessionStats>(fallbackStats);
 
   useEffect(() => {
     let cancelled = false;
+    let statsTimer: ReturnType<typeof setInterval> | null = null;
 
     const loadStatus = async () => {
       try {
@@ -75,10 +95,29 @@ export default function DiagnosticsPage() {
       }
     };
 
+    const loadSessionStats = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<SessionStats>("session_stats_snapshot");
+        if (!cancelled) {
+          setSessionStats(data);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setSessionStats(fallbackStats);
+        }
+      }
+    };
+
     loadStatus();
     loadLogs();
+    loadSessionStats();
+    statsTimer = setInterval(loadSessionStats, 2000);
     return () => {
       cancelled = true;
+      if (statsTimer) {
+        clearInterval(statsTimer);
+      }
     };
   }, []);
 
@@ -158,6 +197,20 @@ export default function DiagnosticsPage() {
             <div>
               <div className="metric-label">Active Sessions</div>
               <div className="metric-value">{status.transport.tcpConnections}</div>
+            </div>
+            <div>
+              <div className="metric-label">Encoder FPS</div>
+              <div className="metric-value">{sessionStats.fps.toFixed(1)}</div>
+            </div>
+            <div>
+              <div className="metric-label">Bitrate</div>
+              <div className="metric-value">{sessionStats.bitrateKbps} kbps</div>
+            </div>
+            <div>
+              <div className="metric-label">Frames (Sent/Acked)</div>
+              <div className="metric-value">
+                {sessionStats.framesSent} / {sessionStats.framesAcked}
+              </div>
             </div>
           </div>
           {error && <div className="form-error">{error}</div>}
