@@ -279,6 +279,11 @@
 - [ ] Add display modes UI and per-display mode switching
 - [ ] Add driver IPC availability probe + retry/backoff for create/remove/mode calls
 - [ ] Wire display mode switch command to driver IPC and refresh display inventory
+- [x] Switch driver IPC to MTTVirtualDisplayPipe commands (SETDISPLAYCOUNT, HDR/EDID toggles, GPU select)
+- [ ] Add virtual display count control in UI (multi-screen support)
+- [ ] Add driver management (install/enable/disable/status) via virtual-driver-manager.ps1 JSON output
+- [ ] Add Linux virtual display backend (Xvfb-based) for headless sessions
+- [ ] Research macOS virtual display options and feasible control surface
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats

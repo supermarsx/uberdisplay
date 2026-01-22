@@ -142,37 +142,36 @@ fn list_virtual_displays() -> Vec<app_state::DisplayInfo> {
 
 #[tauri::command]
 fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
-    match driver_ipc::list_modes(&display_id) {
-        Ok(value) => {
-            let parsed: Result<Vec<app_state::DisplayMode>, _> = serde_json::from_value(value);
-            if let Ok(modes) = parsed {
-                return modes;
-            }
-        }
-        Err(err) => {
-            let _ = host_log::append_log(&app_handle, format!("Driver IPC list modes failed: {err}"));
-        }
-    }
     display_probe::list_display_modes(&display_id)
 }
 
 #[tauri::command]
 fn create_virtual_display(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
-    driver_ipc::create_display(&label).map_err(|err| {
-        let _ = host_log::append_log(&app_handle, format!("Driver IPC create failed: {err}"));
+    let virtual_count = display_probe::list_displays()
+        .into_iter()
+        .filter(|display| display.is_virtual)
+        .count() as u32;
+    let next_count = virtual_count.saturating_add(1);
+    driver_ipc::set_display_count(next_count).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
         err
     })?;
-    let _ = host_log::append_log(&app_handle, format!("Create virtual display requested: {label}"));
+    let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays ({label})"));
     Ok(())
 }
 
 #[tauri::command]
 fn remove_virtual_display(app_handle: tauri::AppHandle, display_id: String) -> Result<(), String> {
-    driver_ipc::remove_display(&display_id).map_err(|err| {
-        let _ = host_log::append_log(&app_handle, format!("Driver IPC remove failed: {err}"));
+    let virtual_count = display_probe::list_displays()
+        .into_iter()
+        .filter(|display| display.is_virtual)
+        .count() as u32;
+    let next_count = virtual_count.saturating_sub(1);
+    driver_ipc::set_display_count(next_count).map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
         err
     })?;
-    let _ = host_log::append_log(&app_handle, format!("Remove virtual display requested: {display_id}"));
+    let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays (remove {display_id})"));
     Ok(())
 }
 
