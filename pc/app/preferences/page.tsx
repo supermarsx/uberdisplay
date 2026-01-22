@@ -122,6 +122,53 @@ export default function PreferencesPage() {
       }
     };
 
+    const loadDisplays = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<DisplayInfo[]>("list_displays");
+        if (!cancelled) {
+          setDisplays(data ?? []);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setDisplays([]);
+        }
+      }
+    };
+
+    const loadVirtualDisplays = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const data = await invoke<DisplayInfo[]>("list_virtual_displays");
+        const count = await invoke<number>("virtual_display_count");
+        if (!cancelled) {
+          setVirtualDisplays(data ?? []);
+          setVirtualDisplayCount(Math.max(1, count || 1));
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setVirtualDisplays([]);
+        }
+      }
+    };
+
+    loadPlatform();
+    loadStatus();
+    loadDisplays();
+    loadVirtualDisplays();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (platform !== "windows") {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const loadDriverStatus = async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
@@ -163,46 +210,12 @@ export default function PreferencesPage() {
       }
     };
 
-    const loadDisplays = async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/tauri");
-        const data = await invoke<DisplayInfo[]>("list_displays");
-        if (!cancelled) {
-          setDisplays(data ?? []);
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setDisplays([]);
-        }
-      }
-    };
-
-    const loadVirtualDisplays = async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/tauri");
-        const data = await invoke<DisplayInfo[]>("list_virtual_displays");
-        const count = await invoke<number>("virtual_display_count");
-        if (!cancelled) {
-          setVirtualDisplays(data ?? []);
-          setVirtualDisplayCount(Math.max(1, count || 1));
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setVirtualDisplays([]);
-        }
-      }
-    };
-
-    loadPlatform();
-    loadStatus();
     loadDriverStatus();
     loadDriverPipe();
-    loadDisplays();
-    loadVirtualDisplays();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [platform]);
 
   const pushToast = (message: string, type: "info" | "success" | "error" = "info") => {
     setToast({ message, type });
@@ -284,7 +297,12 @@ export default function PreferencesPage() {
       await invoke("virtual_driver_action", { action });
       pushToast(`Driver action: ${action}.`, "success");
     } catch (err) {
-      pushToast("Unable to run driver action.", "error");
+      const detail = err instanceof Error ? err.message : String(err);
+      if (detail.includes("pipe unavailable")) {
+        pushToast("Service offline. Install/start the VDD service first.", "error");
+      } else {
+        pushToast("Unable to run driver action.", "error");
+      }
       console.error(err);
     }
   };
@@ -409,6 +427,12 @@ export default function PreferencesPage() {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       await invoke("record_action", { message: `Activated profile ${profile}` });
+      setProfiles((prev) =>
+        prev.map((item) => ({
+          ...item,
+          active: item.name === profile,
+        }))
+      );
       pushToast(`Profile ${profile} activated.`, "success");
     } catch (err) {
       pushToast("Unable to activate profile.", "error");
@@ -637,140 +661,145 @@ export default function PreferencesPage() {
           <div className="form-note">Applies to the current session; device permissions still gate input.</div>
         </section>
 
-        <section className="card status-card">
-          <div className="card-header">
-            <div className="card-title">Driver Manager</div>
-            <div className="card-subtitle">Install, enable, and inspect driver status</div>
-          </div>
-          <div className="status-metrics compact">
-            <div>
-              <div className="metric-label">Installed</div>
-              <div className="metric-value">{driverStatus?.installed ? "Yes" : "No"}</div>
+        {platform === "windows" && (
+          <section className="card status-card">
+            <div className="card-header">
+              <div className="card-title">Driver Manager</div>
+              <div className="card-subtitle">Install, enable, and inspect driver status</div>
             </div>
-            <div>
-              <div className="metric-label">Status</div>
-              <div className="metric-value">{driverStatus?.status ?? "Unknown"}</div>
+            <div className="status-metrics compact">
+              <div>
+                <div className="metric-label">Installed</div>
+                <div className="metric-value">{driverStatus?.installed ? "Yes" : "No"}</div>
+              </div>
+              <div>
+                <div className="metric-label">Status</div>
+                <div className="metric-value">{driverStatus?.status ?? "Unknown"}</div>
+              </div>
+              <div>
+                <div className="metric-label">Device</div>
+                <div className="metric-value">{driverStatus?.details?.friendlyName ?? "—"}</div>
+              </div>
+              <div>
+                <div className="metric-label">Pipe</div>
+                <div className="metric-value">{driverPing ? "Online" : "Offline"}</div>
+              </div>
             </div>
-            <div>
-              <div className="metric-label">Device</div>
-              <div className="metric-value">{driverStatus?.details?.friendlyName ?? "—"}</div>
+            <div className="form-actions align-left">
+              <button className="secondary-button" type="button" onClick={() => handleDriverAction("install")}>Install</button>
+              <button className="secondary-button" type="button" onClick={() => handleDriverAction("enable")}>Enable</button>
+              <button className="secondary-button" type="button" onClick={() => handleDriverAction("disable")}>Disable</button>
+              <button className="secondary-button" type="button" onClick={() => handleDriverAction("status")}>Refresh</button>
             </div>
-            <div>
-              <div className="metric-label">Pipe</div>
-              <div className="metric-value">{driverPing ? "Online" : "Offline"}</div>
+            <div className="form-note">Windows only. Install requires admin once.</div>
+            <div className="form-actions align-left">
+              <button className="ghost-button" type="button" onClick={() => handleServiceAction("install")}>Install Service</button>
+              <button className="ghost-button" type="button" onClick={() => handleServiceAction("start")}>Start Service</button>
+              <button className="ghost-button" type="button" onClick={() => handleServiceAction("stop")}>Stop Service</button>
+              <button className="ghost-button" type="button" onClick={() => handleServiceAction("query")}>Service Status</button>
             </div>
-          </div>
-          <div className="form-actions">
-            <button className="secondary-button" type="button" onClick={() => handleDriverAction("install")}>Install</button>
-            <button className="secondary-button" type="button" onClick={() => handleDriverAction("enable")}>Enable</button>
-            <button className="secondary-button" type="button" onClick={() => handleDriverAction("disable")}>Disable</button>
-            <button className="secondary-button" type="button" onClick={() => handleDriverAction("status")}>Refresh</button>
-          </div>
-          <div className="form-note">Windows only. Install requires admin once.</div>
-          <div className="form-actions">
-            <button className="ghost-button" type="button" onClick={() => handleServiceAction("install")}>Install Service</button>
-            <button className="ghost-button" type="button" onClick={() => handleServiceAction("start")}>Start Service</button>
-            <button className="ghost-button" type="button" onClick={() => handleServiceAction("stop")}>Stop Service</button>
-            <button className="ghost-button" type="button" onClick={() => handleServiceAction("query")}>Service Status</button>
-          </div>
-          {serviceStatus && <div className="form-note">Service: {serviceStatus}</div>}
-          {driverSettingsRaw && <div className="form-note">Pipe: {driverSettingsRaw}</div>}
-        </section>
+            {serviceStatus && <div className="form-note">Service: {serviceStatus}</div>}
+            {driverSettingsRaw && <div className="form-note">Pipe: {driverSettingsRaw}</div>}
+          </section>
+        )}
 
-        <section className="card settings-card">
-          <div className="card-header">
-            <div className="card-title">Driver Pipe Toggles</div>
-            <div className="card-subtitle">HDR, logging, and driver flags</div>
-          </div>
-          <div className="form-toggle-row">
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.hdrPlus}
-                onChange={(event) => handleDriverToggle("hdrPlus", event.target.checked)}
-              />
-              HDR+
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.sdr10}
-                onChange={(event) => handleDriverToggle("sdr10", event.target.checked)}
-              />
-              SDR10
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.logging}
-                onChange={(event) => handleDriverToggle("logging", event.target.checked)}
-              />
-              Logging
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.debug}
-                onChange={(event) => handleDriverToggle("debug", event.target.checked)}
-              />
-              Debug Logs
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.customEdid}
-                onChange={(event) => handleDriverToggle("customEdid", event.target.checked)}
-              />
-              Custom EDID
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.preventSpoof}
-                onChange={(event) => handleDriverToggle("preventSpoof", event.target.checked)}
-              />
-              Prevent Spoof
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.ceaOverride}
-                onChange={(event) => handleDriverToggle("ceaOverride", event.target.checked)}
-              />
-              CEA Override
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={driverToggles.hardwareCursor}
-                onChange={(event) => handleDriverToggle("hardwareCursor", event.target.checked)}
-              />
-              Hardware Cursor
-            </label>
-          </div>
-          <div className="form-grid">
-            <label className="form-field">
-              <span className="form-label">GPU Name</span>
-              <input
-                className="form-input"
-                value={driverGpuName}
-                onChange={(event) => setDriverGpuName(event.target.value)}
-                placeholder='NVIDIA GeForce'
-              />
-              <span className="form-note">Exact adapter name from Windows display settings.</span>
-            </label>
-            <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={handleDriverSetGpu}>Apply GPU</button>
+        {platform === "windows" && (
+          <section className="card settings-card">
+            <div className="card-header">
+              <div className="card-title">Driver Pipe Toggles</div>
+              <div className="card-subtitle">HDR, logging, and driver flags</div>
             </div>
-          </div>
-        </section>
+            <div className="form-toggle-row">
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.hdrPlus}
+                  onChange={(event) => handleDriverToggle("hdrPlus", event.target.checked)}
+                />
+                HDR+
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.sdr10}
+                  onChange={(event) => handleDriverToggle("sdr10", event.target.checked)}
+                />
+                SDR10
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.logging}
+                  onChange={(event) => handleDriverToggle("logging", event.target.checked)}
+                />
+                Logging
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.debug}
+                  onChange={(event) => handleDriverToggle("debug", event.target.checked)}
+                />
+                Debug Logs
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.customEdid}
+                  onChange={(event) => handleDriverToggle("customEdid", event.target.checked)}
+                />
+                Custom EDID
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.preventSpoof}
+                  onChange={(event) => handleDriverToggle("preventSpoof", event.target.checked)}
+                />
+                Prevent Spoof
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.ceaOverride}
+                  onChange={(event) => handleDriverToggle("ceaOverride", event.target.checked)}
+                />
+                CEA Override
+              </label>
+              <label className="form-toggle">
+                <input
+                  type="checkbox"
+                  checked={driverToggles.hardwareCursor}
+                  onChange={(event) => handleDriverToggle("hardwareCursor", event.target.checked)}
+                />
+                Hardware Cursor
+              </label>
+            </div>
+            <div className="form-grid prefs-grid">
+              <label className="form-field">
+                <span className="form-label">GPU Name</span>
+                <input
+                  className="form-input"
+                  value={driverGpuName}
+                  onChange={(event) => setDriverGpuName(event.target.value)}
+                  placeholder='NVIDIA GeForce'
+                />
+                <span className="form-note">Exact adapter name from Windows display settings.</span>
+              </label>
+              <div className="form-actions align-left">
+                <button className="secondary-button" type="button" onClick={handleDriverSetGpu}>Apply GPU</button>
+              </div>
+            </div>
+          </section>
+        )}
 
+        {(platform === "windows" || platform === "linux") && (
         <section className="card settings-card">
           <div className="card-header">
             <div className="card-title">Display Targets</div>
             <div className="card-subtitle">Assign sessions to a display output</div>
           </div>
-          <div className="form-grid">
+          <div className="form-grid prefs-grid">
             <label className="form-field">
               <span className="form-label">Target Display</span>
               <select
@@ -786,7 +815,7 @@ export default function PreferencesPage() {
                 ))}
               </select>
             </label>
-            <div className="form-actions">
+            <div className="form-actions align-left">
               <button className="secondary-button" type="button" onClick={handleDisplayTargetSave}>Apply</button>
             </div>
           </div>
@@ -795,7 +824,7 @@ export default function PreferencesPage() {
             <div className="card-title">Virtual Displays</div>
             <div className="card-subtitle">Create or remove virtual outputs</div>
           </div>
-          <div className="form-grid">
+          <div className="form-grid prefs-grid">
             <label className="form-field">
               <span className="form-label">Label</span>
               <input
@@ -817,12 +846,12 @@ export default function PreferencesPage() {
               />
               <span className="form-note">Windows uses SETDISPLAYCOUNT, Linux starts Xvfb.</span>
             </label>
-            <div className="form-actions">
+            <div className="form-actions align-left">
               <button className="secondary-button" type="button" onClick={handleCreateVirtualDisplay}>Create</button>
               <button className="secondary-button" type="button" onClick={handleSetVirtualDisplayCount}>Apply Count</button>
             </div>
           </div>
-          <div className="device-list">
+          <div className="device-list spacious">
             {virtualDisplays.length === 0 ? (
               <div className="device-row muted">
                 <div>
@@ -850,60 +879,63 @@ export default function PreferencesPage() {
             )}
           </div>
         </section>
+        )}
 
-        <section className="card status-card">
-          <div className="card-header">
-            <div className="card-title">Linux Virtual Display</div>
-            <div className="card-subtitle">Xvfb base display + resolution</div>
-          </div>
-          <div className="form-grid">
-            <label className="form-field">
-              <span className="form-label">Base Display</span>
-              <input
-                className="form-input"
-                type="number"
-                min={1}
-                value={linuxConfig.baseDisplay}
-                onChange={(event) => setLinuxConfig({ ...linuxConfig, baseDisplay: Number(event.target.value) })}
-              />
-            </label>
-            <label className="form-field">
-              <span className="form-label">Width</span>
-              <input
-                className="form-input"
-                type="number"
-                min={320}
-                value={linuxConfig.width}
-                onChange={(event) => setLinuxConfig({ ...linuxConfig, width: Number(event.target.value) })}
-              />
-            </label>
-            <label className="form-field">
-              <span className="form-label">Height</span>
-              <input
-                className="form-input"
-                type="number"
-                min={240}
-                value={linuxConfig.height}
-                onChange={(event) => setLinuxConfig({ ...linuxConfig, height: Number(event.target.value) })}
-              />
-            </label>
-            <label className="form-field">
-              <span className="form-label">Depth</span>
-              <input
-                className="form-input"
-                type="number"
-                min={16}
-                max={32}
-                value={linuxConfig.depth}
-                onChange={(event) => setLinuxConfig({ ...linuxConfig, depth: Number(event.target.value) })}
-              />
-            </label>
-            <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={handleLinuxConfigApply}>Apply Linux Config</button>
+        {platform === "linux" && (
+          <section className="card status-card">
+            <div className="card-header">
+              <div className="card-title">Linux Virtual Display</div>
+              <div className="card-subtitle">Xvfb base display + resolution</div>
             </div>
-          </div>
-          <div className="form-note">Linux-only: restarts Xvfb instances if already running.</div>
-        </section>
+            <div className="form-grid prefs-grid">
+              <label className="form-field">
+                <span className="form-label">Base Display</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1}
+                  value={linuxConfig.baseDisplay}
+                  onChange={(event) => setLinuxConfig({ ...linuxConfig, baseDisplay: Number(event.target.value) })}
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Width</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={320}
+                  value={linuxConfig.width}
+                  onChange={(event) => setLinuxConfig({ ...linuxConfig, width: Number(event.target.value) })}
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Height</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={240}
+                  value={linuxConfig.height}
+                  onChange={(event) => setLinuxConfig({ ...linuxConfig, height: Number(event.target.value) })}
+                />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Depth</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={16}
+                  max={32}
+                  value={linuxConfig.depth}
+                  onChange={(event) => setLinuxConfig({ ...linuxConfig, depth: Number(event.target.value) })}
+                />
+              </label>
+              <div className="form-actions align-left">
+                <button className="secondary-button" type="button" onClick={handleLinuxConfigApply}>Apply Linux Config</button>
+              </div>
+            </div>
+            <div className="form-note">Linux-only: restarts Xvfb instances if already running.</div>
+          </section>
+        )}
 
         <section className="card status-card">
           <div className="card-header">
@@ -911,20 +943,48 @@ export default function PreferencesPage() {
             <div className="card-subtitle">Stored configuration sets</div>
           </div>
           <div className="device-list">
-            <div className="device-row">
-              <div>
-                <div className="device-name">Studio</div>
-                <div className="device-meta">High fidelity for pen work</div>
+            {profiles.map((profile) => (
+              <div className="device-row" key={profile.id}>
+                <div>
+                  {profile.editing ? (
+                    <>
+                      <input
+                        className="form-input"
+                        value={profile.name}
+                        onChange={(event) => handleProfileChange(profile.id, "name", event.target.value)}
+                      />
+                      <input
+                        className="form-input"
+                        value={profile.description}
+                        onChange={(event) =>
+                          handleProfileChange(profile.id, "description", event.target.value)
+                        }
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="device-name">{profile.name}</div>
+                      <div className="device-meta">{profile.description}</div>
+                    </>
+                  )}
+                </div>
+                <div className="device-actions">
+                  <button
+                    className={profile.active ? "pill-button" : "secondary-button"}
+                    type="button"
+                    onClick={() => handleActivateProfile(profile.name)}
+                  >
+                    {profile.active ? "Active" : "Activate"}
+                  </button>
+                  <button className="ghost-button" type="button" onClick={() => handleEditProfile(profile.id)}>
+                    {profile.editing ? "Cancel" : "Edit"}
+                  </button>
+                </div>
               </div>
-              <button className="pill-button" type="button" onClick={() => handleActivateProfile("Studio")}>Active</button>
-            </div>
-            <div className="device-row">
-              <div>
-                <div className="device-name">Mobile</div>
-                <div className="device-meta">Balanced for quick sharing</div>
-              </div>
-              <button className="secondary-button" type="button" onClick={() => handleActivateProfile("Mobile")}>Activate</button>
-            </div>
+            ))}
+          </div>
+          <div className="form-actions align-left">
+            <button className="secondary-button" type="button" onClick={handleSaveProfiles}>Save Profiles</button>
           </div>
         </section>
 
@@ -933,20 +993,68 @@ export default function PreferencesPage() {
             <div className="card-title">Defaults</div>
             <div className="card-subtitle">Adjust key behavior</div>
           </div>
-          <div className="settings-grid">
-            {preferenceCards.map((card) => (
-              <div className="setting" key={card.title}>
-                <div className="setting-label">{card.title}</div>
-                <div className="setting-value">{card.description}</div>
-                <div className="device-meta">
-                  {card.entries.join(" • ")}
-                </div>
-              </div>
-            ))}
+          <div className="form-grid prefs-grid">
+            <label className="form-field">
+              <span className="form-label">Palm Rejection</span>
+              <select
+                className="form-input"
+                value={defaultsConfig.palmRejection ? "on" : "off"}
+                onChange={(event) =>
+                  setDefaultsConfig({ ...defaultsConfig, palmRejection: event.target.value === "on" })
+                }
+              >
+                <option value="on">On</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label className="form-field">
+              <span className="form-label">Pressure Smoothing</span>
+              <select
+                className="form-input"
+                value={defaultsConfig.pressureSmoothing}
+                onChange={(event) =>
+                  setDefaultsConfig({ ...defaultsConfig, pressureSmoothing: event.target.value })
+                }
+              >
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </label>
+            <label className="form-field">
+              <span className="form-label">Auto Reconnect</span>
+              <select
+                className="form-input"
+                value={defaultsConfig.autoReconnect ? "on" : "off"}
+                onChange={(event) =>
+                  setDefaultsConfig({ ...defaultsConfig, autoReconnect: event.target.value === "on" })
+                }
+              >
+                <option value="on">On</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label className="form-field">
+              <span className="form-label">USB Priority</span>
+              <select
+                className="form-input"
+                value={defaultsConfig.usbPriority}
+                onChange={(event) =>
+                  setDefaultsConfig({ ...defaultsConfig, usbPriority: event.target.value })
+                }
+              >
+                <option value="Prefer USB">Prefer USB</option>
+                <option value="Prefer Wi-Fi">Prefer Wi-Fi</option>
+                <option value="Balanced">Balanced</option>
+              </select>
+            </label>
+          </div>
+          <div className="form-actions align-left">
+            <button className="secondary-button" type="button" onClick={handleDefaultsSave}>Save Defaults</button>
           </div>
           <div className="divider" />
           <div className="connect-actions">
-            <button className="secondary-button" type="button" onClick={handleManagePresets}>Manage Presets</button>
+            <button className="secondary-button" type="button" onClick={handleManagePresets}>Manage Profiles</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
         </section>

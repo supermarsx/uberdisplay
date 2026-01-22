@@ -37,6 +37,11 @@ fn app_status(app_handle: tauri::AppHandle) -> app_state::AppStatus {
 }
 
 #[tauri::command]
+fn platform_name() -> String {
+    std::env::consts::OS.to_string()
+}
+
+#[tauri::command]
 fn list_devices(app_handle: tauri::AppHandle) -> Vec<app_state::PairedDevice> {
     device_registry::load_devices(&app_handle)
 }
@@ -608,6 +613,7 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             app_status,
+            platform_name,
             list_devices,
             upsert_device,
             remove_device,
