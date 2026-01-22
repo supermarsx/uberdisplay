@@ -234,6 +234,11 @@ fn session_state_snapshot() -> (Option<u8>, Option<String>) {
 }
 
 #[tauri::command]
+fn session_stats_snapshot() -> app_state::SessionStats {
+    session_state::stats_snapshot()
+}
+
+#[tauri::command]
 fn add_virtual_display(app_handle: tauri::AppHandle) -> Result<(), String> {
     let _ = host_log::append_log(&app_handle, "Add virtual display requested");
     Ok(())
@@ -295,6 +300,7 @@ fn main() {
             tcp_disconnect,
             tcp_poll_status,
             session_state_snapshot,
+            session_stats_snapshot,
             add_virtual_display,
             record_action,
             set_device_input_permissions,
