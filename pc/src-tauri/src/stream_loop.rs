@@ -37,7 +37,6 @@ pub fn start_streaming(
         let mut window_frames = 0u32;
         let mut frames_sent = 0u64;
         let mut frames_acked = 0u64;
-        let mut last_frame_bytes = 0u32;
         let max_wait_ms = (1000 / fps.max(1)).saturating_mul(2).max(8) as u64;
         while running_flag().load(Ordering::SeqCst) {
             if awaiting_ack {
@@ -57,7 +56,7 @@ pub fn start_streaming(
             }
 
             let payload = encoder.encode_dummy_frame();
-            last_frame_bytes = payload.len() as u32;
+            let payload_len = payload.len() as u32;
             let packet = build_frame_packet(FramePacket {
                 frame_meta: 0,
                 h264_bytes: &payload,
@@ -79,7 +78,7 @@ pub fn start_streaming(
                     bitrate_kbps,
                     frames_sent,
                     frames_acked,
-                    last_frame_bytes,
+                    last_frame_bytes: payload_len,
                     queue_depth: if awaiting_ack { 1 } else { 0 },
                 });
                 window_bytes = 0;

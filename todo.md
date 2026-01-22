@@ -242,7 +242,7 @@
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
 - [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
 - [x] Emit `Configure` v2 and `Frame` packets over TCP session
-- [ ] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
+- [x] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
 - [ ] Add session stop + reconnect handling on socket failure
 
 ## Advanced Codec Support (EVC / MPEG-5)
