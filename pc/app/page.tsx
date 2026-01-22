@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type AppStatus = {
@@ -188,10 +189,15 @@ export default function HomePage() {
           <div className="tagline">Host Atelier</div>
         </div>
         <div className="topbar-actions">
-          <button className="ghost-button" type="button">Diagnostics</button>
-          <button className="ghost-button" type="button">Preferences</button>
+          <Link className="ghost-button" href="/diagnostics">Diagnostics</Link>
+          <Link className="ghost-button" href="/preferences">Preferences</Link>
         </div>
       </header>
+      <nav className="tab-bar" aria-label="Primary">
+        <Link className="tab-link active" href="/">Home</Link>
+        <Link className="tab-link" href="/diagnostics">Diagnostics</Link>
+        <Link className="tab-link" href="/preferences">Preferences</Link>
+      </nav>
 
       <main className="content-grid">
         <section className="hero">
@@ -369,7 +375,10 @@ export default function HomePage() {
           <div className="divider" />
           <div className="connect-actions">
             <button className="secondary-button" type="button">Add Virtual Display</button>
-            <button className="ghost-button" type="button" onClick={refreshDevices}>View Logs</button>
+            <div className="connect-actions-links">
+              <button className="ghost-button" type="button" onClick={refreshDevices}>Refresh</button>
+              <Link className="ghost-button" href="/diagnostics">View Logs</Link>
+            </div>
           </div>
         </section>
 

@@ -3,7 +3,7 @@ use crate::app_state::DriverStatus;
 #[cfg(windows)]
 pub fn probe_driver_status() -> DriverStatus {
     use windows::Win32::Graphics::Gdi::{EnumDisplayDevicesW, DISPLAY_DEVICEW, DISPLAY_DEVICE_ACTIVE};
-    use windows::Win32::Foundation::PWSTR;
+    use windows::core::PCWSTR;
 
     let mut installed = false;
     let mut active = false;
@@ -14,7 +14,7 @@ pub fn probe_driver_status() -> DriverStatus {
         display_device.cb = std::mem::size_of::<DISPLAY_DEVICEW>() as u32;
         let ok = unsafe {
             EnumDisplayDevicesW(
-                PWSTR::null(),
+                PCWSTR::null(),
                 device_index,
                 &mut display_device,
                 0,

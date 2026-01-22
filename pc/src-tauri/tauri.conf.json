@@ -1,6 +1,6 @@
 {
   "build": {
-    "beforeDevCommand": "",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "",
     "devPath": "http://localhost:3000",
     "distDir": "../app/out"
@@ -22,7 +22,8 @@
       "csp": "default-src 'self' 'unsafe-inline' data: http://localhost:3000"
     },
     "bundle": {
-      "active": false
+      "active": false,
+      "identifier": "com.supermarsx.uberdisplay.pc"
     }
   }
 }

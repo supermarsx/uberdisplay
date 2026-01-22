@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tauri": "tauri --config ./src-tauri/tauri.conf.json",
+    "tauri:dev": "tauri dev --config ./src-tauri/tauri.conf.json",
+    "tauri:build": "tauri build --config ./src-tauri/tauri.conf.json"
   },
   "dependencies": {
     "@tauri-apps/api": "1.6.0",
@@ -16,6 +19,7 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "1.6.0",
     "@types/node": "20.11.30",
     "@types/react": "18.2.65",
     "@types/react-dom": "18.2.22",

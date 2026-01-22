@@ -39,7 +39,7 @@ fn probe_tcp_table() -> TcpProbe {
 
     use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP_STATE_ESTAB, MIB_TCP_STATE_LISTEN,
+        GetExtendedTcpTable, MIB_TCP_STATE, MIB_TCP_STATE_ESTAB, MIB_TCP_STATE_LISTEN,
         MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET;
@@ -47,9 +47,9 @@ fn probe_tcp_table() -> TcpProbe {
     let mut size: u32 = 0;
     let mut result = unsafe {
         GetExtendedTcpTable(
-            std::ptr::null_mut(),
+            None,
             &mut size,
-            false.into(),
+            false,
             AF_INET.0 as u32,
             TCP_TABLE_OWNER_PID_ALL,
             0,
@@ -66,9 +66,9 @@ fn probe_tcp_table() -> TcpProbe {
     let mut buffer = vec![0u8; size as usize];
     result = unsafe {
         GetExtendedTcpTable(
-            buffer.as_mut_ptr() as *mut _,
+            Some(buffer.as_mut_ptr() as *mut _),
             &mut size,
-            false.into(),
+            false,
             AF_INET.0 as u32,
             TCP_TABLE_OWNER_PID_ALL,
             0,
@@ -101,9 +101,9 @@ fn probe_tcp_table() -> TcpProbe {
         if port != TCP_PORT {
             continue;
         }
-        if row.dwState == MIB_TCP_STATE_LISTEN {
+        if MIB_TCP_STATE(row.dwState as i32) == MIB_TCP_STATE_LISTEN {
             listening = true;
-        } else if row.dwState == MIB_TCP_STATE_ESTAB {
+        } else if MIB_TCP_STATE(row.dwState as i32) == MIB_TCP_STATE_ESTAB {
             connections += 1;
         }
     }
@@ -119,15 +119,17 @@ fn probe_aoap_attached() -> bool {
     use std::mem::size_of;
 
     use windows::Win32::Devices::DeviceAndDriverInstallation::{
-        SetupDiDestroyDeviceInfoList, SetupDiEnumDeviceInfo, SetupDiGetClassDevsW,
-        SetupDiGetDeviceRegistryPropertyW, DIGCF_ALLCLASSES, DIGCF_PRESENT, SP_DEVINFO_DATA,
-        SPDRP_DEVICEDESC, SPDRP_FRIENDLYNAME,
+        SetupDiDestroyDeviceInfoList, SetupDiEnumDeviceInfo, SetupDiGetClassDevsW, DIGCF_ALLCLASSES,
+        DIGCF_PRESENT, SP_DEVINFO_DATA, SPDRP_DEVICEDESC, SPDRP_FRIENDLYNAME,
     };
-    use windows::Win32::Foundation::HDEVINFO;
 
     let device_info_set =
         unsafe { SetupDiGetClassDevsW(None, None, None, DIGCF_PRESENT | DIGCF_ALLCLASSES) };
-    if device_info_set == HDEVINFO::default() || device_info_set.is_invalid() {
+    let device_info_set = match device_info_set {
+        Ok(handle) => handle,
+        Err(_) => return false,
+    };
+    if device_info_set.is_invalid() {
         return false;
     }
 
@@ -140,13 +142,13 @@ fn probe_aoap_attached() -> bool {
             ..Default::default()
         };
         let success =
-            unsafe { SetupDiEnumDeviceInfo(device_info_set, index, &mut device_info) }.as_bool();
+            unsafe { SetupDiEnumDeviceInfo(device_info_set, index, &mut device_info) }.is_ok();
         if !success {
             break;
         }
 
-        let name = get_device_string(device_info_set, &mut device_info, SPDRP_FRIENDLYNAME)
-            .or_else(|| get_device_string(device_info_set, &mut device_info, SPDRP_DEVICEDESC));
+        let name = get_device_string(device_info_set, &device_info, SPDRP_FRIENDLYNAME)
+            .or_else(|| get_device_string(device_info_set, &device_info, SPDRP_DEVICEDESC));
 
         if let Some(name) = name {
             let lower = name.to_ascii_lowercase();
@@ -163,9 +165,7 @@ fn probe_aoap_attached() -> bool {
         index += 1;
     }
 
-    unsafe {
-        SetupDiDestroyDeviceInfoList(device_info_set);
-    }
+    let _ = unsafe { SetupDiDestroyDeviceInfoList(device_info_set) };
 
     attached
 }
@@ -177,54 +177,56 @@ fn probe_aoap_attached() -> bool {
 
 #[cfg(windows)]
 fn get_device_string(
-    device_info_set: windows::Win32::Foundation::HDEVINFO,
-    device_info: &mut windows::Win32::Devices::DeviceAndDriverInstallation::SP_DEVINFO_DATA,
-    property: u32,
+    device_info_set: windows::Win32::Devices::DeviceAndDriverInstallation::HDEVINFO,
+    device_info: &windows::Win32::Devices::DeviceAndDriverInstallation::SP_DEVINFO_DATA,
+    property: windows::Win32::Devices::DeviceAndDriverInstallation::SETUP_DI_REGISTRY_PROPERTY,
 ) -> Option<String> {
     use windows::Win32::Devices::DeviceAndDriverInstallation::SetupDiGetDeviceRegistryPropertyW;
     use windows::Win32::Foundation::{GetLastError, ERROR_INSUFFICIENT_BUFFER};
 
     let mut data_type = 0u32;
     let mut required_size = 0u32;
-    let mut buffer = vec![0u16; 256];
+    let mut buffer = vec![0u8; 256];
 
-    let success = unsafe {
+    let mut success = unsafe {
         SetupDiGetDeviceRegistryPropertyW(
             device_info_set,
             device_info,
             property,
-            &mut data_type,
-            buffer.as_mut_ptr() as *mut u8,
-            (buffer.len() * 2) as u32,
-            &mut required_size,
+            Some(&mut data_type),
+            Some(buffer.as_mut_slice()),
+            Some(&mut required_size),
         )
     }
-    .as_bool();
+    .is_ok();
 
     if !success {
         let err = unsafe { GetLastError() };
         if err != ERROR_INSUFFICIENT_BUFFER || required_size == 0 {
             return None;
         }
-        buffer = vec![0u16; (required_size as usize / 2) + 1];
-        let success = unsafe {
+        buffer = vec![0u8; required_size as usize];
+        success = unsafe {
             SetupDiGetDeviceRegistryPropertyW(
                 device_info_set,
                 device_info,
                 property,
-                &mut data_type,
-                buffer.as_mut_ptr() as *mut u8,
-                (buffer.len() * 2) as u32,
-                &mut required_size,
+                Some(&mut data_type),
+                Some(buffer.as_mut_slice()),
+                Some(&mut required_size),
             )
         }
-        .as_bool();
+        .is_ok();
         if !success {
             return None;
         }
     }
 
-    Some(utf16_to_string(&buffer))
+    let utf16: Vec<u16> = buffer
+        .chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect();
+    Some(utf16_to_string(&utf16))
 }
 
 #[cfg(windows)]
