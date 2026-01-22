@@ -70,10 +70,10 @@ body {
 .app-shell {
   position: relative;
   z-index: 1;
-  padding: 36px clamp(20px, 4vw, 56px) 24px;
+  padding: 24px clamp(18px, 3.4vw, 48px) 18px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   height: 100vh;
   overflow: hidden;
 }
@@ -82,20 +82,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
 }
 
 .wordmark {
   font-family: var(--font-display);
-  font-size: clamp(28px, 3.4vw, 44px);
+  font-size: clamp(24px, 3vw, 36px);
   letter-spacing: 1px;
 }
 
 .tagline {
   font-family: var(--font-script);
   color: var(--sage-400);
-  font-size: 20px;
-  margin-top: 6px;
+  font-size: 16px;
+  margin-top: 4px;
 }
 
 .topbar-actions {
@@ -104,6 +104,7 @@ body {
 }
 
 .content-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
@@ -113,6 +114,27 @@ body {
   padding-right: 6px;
   scrollbar-width: thin;
   scrollbar-color: rgba(230, 222, 201, 0.35) transparent;
+}
+
+.content-grid {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(0, 0, 0, 1) 18px,
+    rgba(0, 0, 0, 1) calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(0, 0, 0, 1) 18px,
+    rgba(0, 0, 0, 1) calc(100% - 18px),
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .hero {
