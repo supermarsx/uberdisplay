@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Toast, { type ToastState } from "../components/Toast";
 
 type AppStatus = {
   protocolVersion: number;
@@ -81,9 +82,8 @@ const fallbackStats: SessionStats = {
 
 export default function DiagnosticsPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
   const [logs, setLogs] = useState<HostLogEntry[]>(fallbackLogs);
-  const [notice, setNotice] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>(fallbackStats);
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
 
@@ -97,12 +97,10 @@ export default function DiagnosticsPage() {
         const data = await invoke<AppStatus>("app_status");
         if (!cancelled) {
           setStatus(data);
-          setError(null);
         }
       } catch (_error) {
         if (!cancelled) {
           setStatus(fallbackStatus);
-          setError("Unable to load diagnostics.");
         }
       }
     };
@@ -162,13 +160,17 @@ export default function DiagnosticsPage() {
     };
   }, []);
 
+  const pushToast = (message: string, type: "info" | "success" | "error" = "info") => {
+    setToast({ message, type });
+  };
+
   const handleExportLogs = async () => {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       const path = await invoke<string>("export_logs");
-      setNotice(`Logs exported to ${path}`);
+      pushToast(`Logs exported to ${path}`, "success");
     } catch (err) {
-      setError("Unable to export logs.");
+      pushToast("Unable to export logs.", "error");
       console.error(err);
     }
   };
@@ -177,9 +179,9 @@ export default function DiagnosticsPage() {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       const path = await invoke<string>("export_diagnostics");
-      setNotice(`Diagnostics exported to ${path}`);
+      pushToast(`Diagnostics exported to ${path}`, "success");
     } catch (err) {
-      setError("Unable to export diagnostics.");
+      pushToast("Unable to export diagnostics.", "error");
       console.error(err);
     }
   };
@@ -198,10 +200,9 @@ export default function DiagnosticsPage() {
       const { invoke } = await import("@tauri-apps/api/tauri");
       await invoke("clear_logs");
       setLogs([]);
-      setNotice("Event log cleared.");
-      setError(null);
+      pushToast("Event log cleared.", "success");
     } catch (err) {
-      setError("Unable to clear logs.");
+      pushToast("Unable to clear logs.", "error");
       console.error(err);
     }
   };
@@ -216,6 +217,7 @@ export default function DiagnosticsPage() {
   const sessionLabel = sessionLifecycle.charAt(0).toUpperCase() + sessionLifecycle.slice(1);
   return (
     <div className="app-shell">
+      <Toast toast={toast} onClear={() => setToast(null)} />
       <header className="topbar">
         <div>
           <div className="wordmark">UberDisplay</div>
@@ -304,7 +306,6 @@ export default function DiagnosticsPage() {
               <div className="metric-value">{sessionStats.captureScale}</div>
             </div>
           </div>
-          {error && <div className="form-error">{error}</div>}
         </section>
 
         <section className="card connect-card">
@@ -335,7 +336,6 @@ export default function DiagnosticsPage() {
             <button className="secondary-button" type="button" onClick={handleExportDiagnostics}>Export Diagnostics</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
-          {notice && <div className="form-note">{notice}</div>}
         </section>
         <section className="card settings-card">
         <div className="card-header">

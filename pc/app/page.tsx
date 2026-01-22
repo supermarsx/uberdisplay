@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Toast, { type ToastState } from "./components/Toast";
 
 type AppStatus = {
   protocolVersion: number;
@@ -121,9 +122,8 @@ export default function HomePage() {
   const [virtualDisplayLabel, setVirtualDisplayLabel] = useState("UberDisplay");
   const [pairingOpen, setPairingOpen] = useState(false);
   const [form, setForm] = useState<DeviceForm>(initialForm);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [codecSelection, setCodecSelection] = useState<CodecSelection | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>(fallbackStats);
   const [tcpForm, setTcpForm] = useState({
@@ -224,14 +224,17 @@ export default function HomePage() {
     return invoke<T>(command, args);
   };
 
+  const pushToast = (message: string, type: "info" | "success" | "error" = "info") => {
+    setToast({ message, type });
+  };
+
   const refreshDevices = async () => {
     try {
       const list = await invokeTauri<AppStatus["devices"]>("list_devices");
       setDevices(list ?? []);
-      setError(null);
-      setNotice("Device list refreshed.");
+      pushToast("Device list refreshed.", "success");
     } catch (err) {
-      setError("Unable to refresh devices.");
+      pushToast("Unable to refresh devices.", "error");
       console.error(err);
     }
   };
@@ -239,7 +242,7 @@ export default function HomePage() {
   const handlePairSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError("Device name is required.");
+      pushToast("Device name is required.", "error");
       return;
     }
 
@@ -261,10 +264,9 @@ export default function HomePage() {
       setDevices(list ?? []);
       setForm(initialForm);
       setPairingOpen(false);
-      setError(null);
-      setNotice("Device paired.");
+      pushToast("Device paired.", "success");
     } catch (err) {
-      setError("Unable to save device.");
+      pushToast("Unable to save device.", "error");
       console.error(err);
     }
   };
@@ -283,7 +285,7 @@ export default function HomePage() {
     });
     setEditingDeviceId(device.id);
     setPairingOpen(true);
-    setError(null);
+    setToast(null);
   };
 
   const handleEditSubmit = async (event: React.FormEvent) => {
@@ -292,7 +294,7 @@ export default function HomePage() {
       return;
     }
     if (!form.name.trim()) {
-      setError("Device name is required.");
+      pushToast("Device name is required.", "error");
       return;
     }
 
@@ -315,10 +317,9 @@ export default function HomePage() {
       setForm(initialForm);
       setEditingDeviceId(null);
       setPairingOpen(false);
-      setError(null);
-      setNotice("Device updated.");
+      pushToast("Device updated.", "success");
     } catch (err) {
-      setError("Unable to update device.");
+      pushToast("Unable to update device.", "error");
       console.error(err);
     }
   };
@@ -327,10 +328,9 @@ export default function HomePage() {
     try {
       const list = await invokeTauri<AppStatus["devices"]>("remove_device", { deviceId });
       setDevices(list ?? []);
-      setError(null);
-      setNotice("Device removed.");
+      pushToast("Device removed.", "success");
     } catch (err) {
-      setError("Unable to remove device.");
+      pushToast("Unable to remove device.", "error");
       console.error(err);
     }
   };
@@ -339,10 +339,9 @@ export default function HomePage() {
     try {
       const list = await invokeTauri<AppStatus["devices"]>("connect_device", { deviceId });
       setDevices(list ?? []);
-      setError(null);
-      setNotice("Connection requested.");
+      pushToast("Connection requested.", "success");
     } catch (err) {
-      setError("Unable to connect device.");
+      pushToast("Unable to connect device.", "error");
       console.error(err);
     }
   };
@@ -350,10 +349,9 @@ export default function HomePage() {
   const handleStartSession = async () => {
     try {
       await invokeTauri("start_session");
-      setError(null);
-      setNotice("Session start requested.");
+      pushToast("Session start requested.", "success");
     } catch (err) {
-      setError("Unable to start session.");
+      pushToast("Unable to start session.", "error");
       console.error(err);
     }
   };
@@ -361,10 +359,9 @@ export default function HomePage() {
   const handleAddVirtualDisplay = async () => {
     try {
       await invokeTauri("add_virtual_display");
-      setError(null);
-      setNotice("Virtual display requested.");
+      pushToast("Virtual display requested.", "success");
     } catch (err) {
-      setError("Unable to add virtual display.");
+      pushToast("Unable to add virtual display.", "error");
       console.error(err);
     }
   };
@@ -386,10 +383,9 @@ export default function HomePage() {
       await invokeTauri("record_action", {
         message: `Remote input ${label} ${enabled ? "enabled" : "disabled"}`,
       });
-      setNotice(`Remote input ${label} ${enabled ? "enabled" : "disabled"}.`);
-      setError(null);
+      pushToast(`Remote input ${label} ${enabled ? "enabled" : "disabled"}.`, "success");
     } catch (err) {
-      setError("Unable to update remote input.");
+      pushToast("Unable to update remote input.", "error");
       console.error(err);
     }
   };
@@ -418,10 +414,9 @@ export default function HomePage() {
         clientCodecMask: codecMaskFromForm(),
       });
       setCodecSelection(selection);
-      setNotice(`TCP connected. Selected codec: ${selection.codecName}.`);
-      setError(null);
+      pushToast(`TCP connected. Selected codec: ${selection.codecName}.`, "success");
     } catch (err) {
-      setError("Unable to connect via TCP.");
+      pushToast("Unable to connect via TCP.", "error");
       console.error(err);
     }
   };
@@ -429,10 +424,9 @@ export default function HomePage() {
   const handleTcpDisconnect = async () => {
     try {
       await invokeTauri("tcp_disconnect");
-      setNotice("TCP disconnected.");
-      setError(null);
+      pushToast("TCP disconnected.", "success");
     } catch (err) {
-      setError("Unable to disconnect TCP.");
+      pushToast("Unable to disconnect TCP.", "error");
       console.error(err);
     }
   };
@@ -441,10 +435,9 @@ export default function HomePage() {
     try {
       const payload = displayTarget === "auto" ? null : displayTarget;
       await invokeTauri("set_session_display_target", { displayId: payload });
-      setNotice("Display target updated.");
-      setError(null);
+      pushToast("Display target updated.", "success");
     } catch (err) {
-      setError("Unable to update display target.");
+      pushToast("Unable to update display target.", "error");
       console.error(err);
     }
   };
@@ -452,10 +445,9 @@ export default function HomePage() {
   const handleCreateVirtualDisplay = async () => {
     try {
       await invokeTauri("create_virtual_display", { label: virtualDisplayLabel });
-      setNotice("Virtual display creation requested.");
-      setError(null);
+      pushToast("Virtual display creation requested.", "success");
     } catch (err) {
-      setError("Unable to create virtual display.");
+      pushToast("Unable to create virtual display.", "error");
       console.error(err);
     }
   };
@@ -463,10 +455,9 @@ export default function HomePage() {
   const handleRemoveVirtualDisplay = async (displayId: string) => {
     try {
       await invokeTauri("remove_virtual_display", { displayId });
-      setNotice("Virtual display removal requested.");
-      setError(null);
+      pushToast("Virtual display removal requested.", "success");
     } catch (err) {
-      setError("Unable to remove virtual display.");
+      pushToast("Unable to remove virtual display.", "error");
       console.error(err);
     }
   };
@@ -502,6 +493,7 @@ export default function HomePage() {
 
   return (
     <div className="app-shell">
+      <Toast toast={toast} onClear={() => setToast(null)} />
       <header className="topbar">
         <div>
           <div className="wordmark">UberDisplay</div>
@@ -534,7 +526,7 @@ export default function HomePage() {
                 setPairingOpen((open) => !open);
                 setEditingDeviceId(null);
                 setForm(initialForm);
-                setError(null);
+                setToast(null);
               }}
             >
               Pair Device
@@ -760,7 +752,6 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              {error && <div className="form-error">{error}</div>}
               <div className="form-actions">
                 <button
                   className="secondary-button"
@@ -769,7 +760,7 @@ export default function HomePage() {
                     setPairingOpen(false);
                     setEditingDeviceId(null);
                     setForm(initialForm);
-                    setError(null);
+                    setToast(null);
                   }}
                 >
                   Cancel
@@ -969,7 +960,6 @@ export default function HomePage() {
               <Link className="ghost-button" href="/diagnostics">View Logs</Link>
             </div>
           </div>
-          {notice && <div className="form-note">{notice}</div>}
         </section>
 
         <section className="card settings-card">

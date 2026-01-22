@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Toast, { type ToastState } from "../components/Toast";
 
 type AppStatus = {
   protocolVersion: number;
@@ -27,8 +28,7 @@ const fallbackStatus: AppStatus = {
 
 export default function PreferencesPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
   const [form, setForm] = useState(fallbackStatus.settings);
 
   useEffect(() => {
@@ -40,13 +40,11 @@ export default function PreferencesPage() {
         const data = await invoke<AppStatus>("app_status");
         if (!cancelled) {
           setStatus(data);
-          setError(null);
           setForm(data.settings);
         }
       } catch (_error) {
         if (!cancelled) {
           setStatus(fallbackStatus);
-          setError("Unable to load preferences.");
         }
       }
     };
@@ -56,6 +54,10 @@ export default function PreferencesPage() {
       cancelled = true;
     };
   }, []);
+
+  const pushToast = (message: string, type: "info" | "success" | "error" = "info") => {
+    setToast({ message, type });
+  };
 
   const handleSave = async () => {
     try {
@@ -70,10 +72,9 @@ export default function PreferencesPage() {
       const saved = await invoke<AppStatus["settings"]>("update_settings", { settings: payload });
       setStatus((prev) => ({ ...prev, settings: saved }));
       setForm(saved);
-      setError(null);
-      setNotice("Preferences saved.");
+      pushToast("Preferences saved.", "success");
     } catch (err) {
-      setError("Unable to save preferences.");
+      pushToast("Unable to save preferences.", "error");
       console.error(err);
     }
   };
@@ -84,10 +85,9 @@ export default function PreferencesPage() {
       const saved = await invoke<AppStatus["settings"]>("reset_settings");
       setStatus((prev) => ({ ...prev, settings: saved }));
       setForm(saved);
-      setError(null);
-      setNotice("Preferences reset.");
+      pushToast("Preferences reset.", "success");
     } catch (err) {
-      setError("Unable to reset preferences.");
+      pushToast("Unable to reset preferences.", "error");
       console.error(err);
     }
   };
@@ -96,9 +96,9 @@ export default function PreferencesPage() {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       await invoke("record_action", { message: "Manage presets opened" });
-      setNotice("Presets manager requested.");
+      pushToast("Presets manager requested.", "success");
     } catch (err) {
-      setError("Unable to open presets.");
+      pushToast("Unable to open presets.", "error");
       console.error(err);
     }
   };
@@ -107,9 +107,9 @@ export default function PreferencesPage() {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
       await invoke("record_action", { message: `Activated profile ${profile}` });
-      setNotice(`Profile ${profile} activated.`);
+      pushToast(`Profile ${profile} activated.`, "success");
     } catch (err) {
-      setError("Unable to activate profile.");
+      pushToast("Unable to activate profile.", "error");
       console.error(err);
     }
   };
@@ -152,6 +152,7 @@ export default function PreferencesPage() {
   ];
   return (
     <div className="app-shell">
+      <Toast toast={toast} onClear={() => setToast(null)} />
       <header className="topbar">
         <div>
           <div className="wordmark">UberDisplay</div>
@@ -288,8 +289,6 @@ export default function PreferencesPage() {
             <button className="secondary-button" type="button" onClick={handleManagePresets}>Manage Presets</button>
             <Link className="ghost-button" href="/">Return</Link>
           </div>
-          {error && <div className="form-error">{error}</div>}
-          {notice && <div className="form-note">{notice}</div>}
         </section>
       </main>
 
