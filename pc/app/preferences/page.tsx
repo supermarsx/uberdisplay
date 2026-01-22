@@ -41,6 +41,7 @@ export default function PreferencesPage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [toast, setToast] = useState<ToastState>(null);
   const [form, setForm] = useState(fallbackStatus.settings);
+  const [platform, setPlatform] = useState("unknown");
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [virtualDisplays, setVirtualDisplays] = useState<DisplayInfo[]>([]);
   const [displayTarget, setDisplayTarget] = useState("auto");
@@ -71,6 +72,16 @@ export default function PreferencesPage() {
     height: 1600,
     depth: 24,
   });
+  const [profiles, setProfiles] = useState([
+    { id: "studio", name: "Studio", description: "High fidelity for pen work", active: true, editing: false },
+    { id: "mobile", name: "Mobile", description: "Balanced for quick sharing", active: false, editing: false },
+  ]);
+  const [defaultsConfig, setDefaultsConfig] = useState({
+    palmRejection: true,
+    pressureSmoothing: "Medium",
+    autoReconnect: true,
+    usbPriority: "Prefer USB",
+  });
   const [inputControls, setInputControls] = useState({
     enableInput: true,
     captureOnConnect: true,
@@ -81,6 +92,20 @@ export default function PreferencesPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    const loadPlatform = async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/tauri");
+        const value = await invoke<string>("platform_name");
+        if (!cancelled) {
+          setPlatform(value);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setPlatform("unknown");
+        }
+      }
+    };
 
     const loadStatus = async () => {
       try {
@@ -168,6 +193,7 @@ export default function PreferencesPage() {
       }
     };
 
+    loadPlatform();
     loadStatus();
     loadDriverStatus();
     loadDriverPipe();
@@ -371,10 +397,10 @@ export default function PreferencesPage() {
   const handleManagePresets = async () => {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
-      await invoke("record_action", { message: "Manage presets opened" });
-      pushToast("Presets manager requested.", "success");
+      await invoke("record_action", { message: "Manage profiles opened" });
+      pushToast("Profiles manager requested.", "success");
     } catch (err) {
-      pushToast("Unable to open presets.", "error");
+      pushToast("Unable to open profiles.", "error");
       console.error(err);
     }
   };
@@ -390,32 +416,42 @@ export default function PreferencesPage() {
     }
   };
 
-  const preferenceCards = [
-    {
-      title: "Streaming",
-      description: "Codec, quality, and refresh targeting.",
-      entries: [
-        status.settings.codec,
-        `Quality ${status.settings.quality}%`,
-        `Refresh cap ${status.settings.refreshCapHz} Hz`,
-        `Keyframe interval ${status.settings.keyframeInterval}f`,
-      ],
-    },
-    {
-      title: "Input",
-      description: "Pen + touch behavior defaults.",
-      entries: [status.settings.inputMode, "Palm rejection: On", "Pressure smoothing: Medium"],
-    },
-    {
-      title: "Transport",
-      description: "USB/Wi-Fi handoff priorities.",
-      entries: [
-        status.transport.aoapAttached ? "USB active" : "Prefer USB",
-        status.transport.tcpListening ? "Wi-Fi ready" : "Wi-Fi idle",
-        "Auto-reconnect: Enabled",
-      ],
-    },
-  ];
+  const handleEditProfile = (id: string) => {
+    setProfiles((prev) =>
+      prev.map((profile) =>
+        profile.id === id ? { ...profile, editing: !profile.editing } : profile
+      )
+    );
+  };
+
+  const handleProfileChange = (id: string, key: "name" | "description", value: string) => {
+    setProfiles((prev) =>
+      prev.map((profile) => (profile.id === id ? { ...profile, [key]: value } : profile))
+    );
+  };
+
+  const handleSaveProfiles = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: "Profiles updated (local only)" });
+      setProfiles((prev) => prev.map((profile) => ({ ...profile, editing: false })));
+      pushToast("Profiles updated.", "success");
+    } catch (err) {
+      pushToast("Unable to save profiles.", "error");
+      console.error(err);
+    }
+  };
+
+  const handleDefaultsSave = async () => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      await invoke("record_action", { message: "Defaults updated (local only)" });
+      pushToast("Defaults updated.", "success");
+    } catch (err) {
+      pushToast("Unable to update defaults.", "error");
+      console.error(err);
+    }
+  };
 
   const codecOptions = [
     "H.264 High",
