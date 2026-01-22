@@ -40,6 +40,7 @@ fn state() -> &'static Mutex<LinuxDisplayState> {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 pub fn ensure_display_count(count: u32) -> Result<(), String> {
     ensure_xvfb_available()?;
     let mut guard = state().lock().map_err(|_| "Display state lock poisoned".to_string())?;
@@ -53,6 +54,7 @@ pub fn ensure_display_count(count: u32) -> Result<(), String> {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 pub fn current_count() -> u32 {
     state()
         .lock()
@@ -61,6 +63,7 @@ pub fn current_count() -> u32 {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 pub fn set_config(base_display: u32, width: u32, height: u32, depth: u32) -> Result<(), String> {
     let mut guard = state().lock().map_err(|_| "Display state lock poisoned".to_string())?;
     guard.base_display = base_display;
@@ -149,16 +152,19 @@ fn next_display_number(base: u32, existing: &BTreeMap<u32, Child>) -> u32 {
 }
 
 #[cfg(not(target_os = "linux"))]
+#[allow(dead_code)]
 pub fn ensure_display_count(_count: u32) -> Result<(), String> {
     Err("Linux virtual display management is only available on Linux.".to_string())
 }
 
 #[cfg(not(target_os = "linux"))]
+#[allow(dead_code)]
 pub fn current_count() -> u32 {
     0
 }
 
 #[cfg(not(target_os = "linux"))]
+#[allow(dead_code)]
 pub fn set_config(_base_display: u32, _width: u32, _height: u32, _depth: u32) -> Result<(), String> {
     Err("Linux virtual display management is only available on Linux.".to_string())
 }

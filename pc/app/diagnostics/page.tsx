@@ -317,8 +317,8 @@ export default function DiagnosticsPage() {
             <div className="log-count">{logs.length}</div>
           </div>
           <div className="device-list log-list">
-            {logs.map((entry) => (
-              <div className="device-row" key={`${entry.timestamp}-${entry.message}`}>
+            {logs.map((entry, index) => (
+              <div className="device-row" key={`${entry.timestamp}-${entry.message}-${index}`}>
                 <div>
                   <div className="device-name">{entry.message}</div>
                   <div className="device-meta">{formatTimestamp(entry.timestamp)}</div>

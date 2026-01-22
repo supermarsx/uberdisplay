@@ -238,6 +238,10 @@ body {
   overflow: hidden;
 }
 
+.hero--prefs {
+  padding-bottom: 34px;
+}
+
 .hero::after {
   content: '';
   position: absolute;
@@ -488,6 +492,10 @@ body {
   gap: 12px;
 }
 
+.device-list.spacious {
+  gap: 16px;
+}
+
 .log-list {
   max-height: clamp(220px, 40vh, 420px);
   overflow: auto;
@@ -565,6 +573,11 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
+}
+
+.form-grid.prefs-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
 }
 
 .form-field {
@@ -655,6 +668,12 @@ body {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 14px;
+}
+
+.form-actions.align-left {
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .form-error {

@@ -35,6 +35,7 @@ use windows::core::PCWSTR;
 use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
 
 #[cfg(windows)]
+#[allow(dead_code)]
 pub fn capture_nv12(width: i32, height: i32) -> Result<Vec<u8>, String> {
     let aligned_width = width.max(2) & !1;
     let aligned_height = height.max(2) & !1;

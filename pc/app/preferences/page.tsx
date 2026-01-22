@@ -51,6 +51,7 @@ export default function PreferencesPage() {
     status: string;
     details?: { friendlyName?: string; instanceId?: string; pnpDeviceID?: string };
   } | null>(null);
+  const [serviceStatus, setServiceStatus] = useState<string | null>(null);
   const [driverPing, setDriverPing] = useState<boolean | null>(null);
   const [driverSettingsRaw, setDriverSettingsRaw] = useState<string | null>(null);
   const [driverToggles, setDriverToggles] = useState({
@@ -262,6 +263,29 @@ export default function PreferencesPage() {
     }
   };
 
+  const handleServiceAction = async (action: "install" | "start" | "stop" | "query") => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      if (action === "install") {
+        await invoke("install_vdd_service");
+        pushToast("Service install requested.", "success");
+      } else if (action === "start") {
+        await invoke("start_vdd_service");
+        pushToast("Service start requested.", "success");
+      } else if (action === "stop") {
+        await invoke("stop_vdd_service");
+        pushToast("Service stop requested.", "success");
+      } else {
+        const status = await invoke<string>("query_vdd_service");
+        setServiceStatus(status);
+        pushToast("Service status refreshed.", "success");
+      }
+    } catch (err) {
+      pushToast("Unable to run service action.", "error");
+      console.error(err);
+    }
+  };
+
   const handleDriverToggle = async (key: keyof typeof driverToggles, enabled: boolean) => {
     try {
       const { invoke } = await import("@tauri-apps/api/tauri");
@@ -422,7 +446,7 @@ export default function PreferencesPage() {
       </nav>
 
       <main className="content-grid">
-        <section className="hero">
+        <section className="hero hero--prefs">
           <div className="hero-title">Tune the host profile.</div>
           <p className="hero-body">
             Adjust codec, input, and transport defaults. These settings apply to
@@ -447,6 +471,7 @@ export default function PreferencesPage() {
                     </option>
                   ))}
                 </select>
+                <span className="form-note">Pick the default codec. Session negotiation can override this.</span>
               </label>
               <label className="form-field">
                 <span className="form-label">Quality</span>
@@ -458,6 +483,7 @@ export default function PreferencesPage() {
                   value={form.quality}
                   onChange={(event) => setForm({ ...form, quality: Number(event.target.value) })}
                 />
+                <span className="form-note">Higher quality increases bitrate.</span>
               </label>
               <label className="form-field">
                 <span className="form-label">Refresh Cap (Hz)</span>
@@ -471,6 +497,7 @@ export default function PreferencesPage() {
                     setForm({ ...form, refreshCapHz: Number(event.target.value) })
                   }
                 />
+                <span className="form-note">Auto clamps to device capability.</span>
               </label>
               <label className="form-field">
                 <span className="form-label">Keyframe Interval (frames)</span>
@@ -484,6 +511,7 @@ export default function PreferencesPage() {
                     setForm({ ...form, keyframeInterval: Number(event.target.value) })
                   }
                 />
+                <span className="form-note">Shorter intervals recover faster after loss.</span>
               </label>
               <label className="form-field">
                 <span className="form-label">Input Mode</span>
@@ -492,6 +520,7 @@ export default function PreferencesPage() {
                   value={form.inputMode}
                   onChange={(event) => setForm({ ...form, inputMode: event.target.value })}
                 />
+                <span className="form-note">Shown on the host and sent to clients.</span>
               </label>
             </div>
           </form>
@@ -569,6 +598,7 @@ export default function PreferencesPage() {
               Keyboard
             </label>
           </div>
+          <div className="form-note">Applies to the current session; device permissions still gate input.</div>
         </section>
 
         <section className="card status-card">
@@ -600,6 +630,14 @@ export default function PreferencesPage() {
             <button className="secondary-button" type="button" onClick={() => handleDriverAction("disable")}>Disable</button>
             <button className="secondary-button" type="button" onClick={() => handleDriverAction("status")}>Refresh</button>
           </div>
+          <div className="form-note">Windows only. Install requires admin once.</div>
+          <div className="form-actions">
+            <button className="ghost-button" type="button" onClick={() => handleServiceAction("install")}>Install Service</button>
+            <button className="ghost-button" type="button" onClick={() => handleServiceAction("start")}>Start Service</button>
+            <button className="ghost-button" type="button" onClick={() => handleServiceAction("stop")}>Stop Service</button>
+            <button className="ghost-button" type="button" onClick={() => handleServiceAction("query")}>Service Status</button>
+          </div>
+          {serviceStatus && <div className="form-note">Service: {serviceStatus}</div>}
           {driverSettingsRaw && <div className="form-note">Pipe: {driverSettingsRaw}</div>}
         </section>
 
@@ -683,6 +721,7 @@ export default function PreferencesPage() {
                 onChange={(event) => setDriverGpuName(event.target.value)}
                 placeholder='NVIDIA GeForce'
               />
+              <span className="form-note">Exact adapter name from Windows display settings.</span>
             </label>
             <div className="form-actions">
               <button className="secondary-button" type="button" onClick={handleDriverSetGpu}>Apply GPU</button>
@@ -728,6 +767,7 @@ export default function PreferencesPage() {
                 value={virtualDisplayLabel}
                 onChange={(event) => setVirtualDisplayLabel(event.target.value)}
               />
+              <span className="form-note">Used when requesting new outputs.</span>
             </label>
             <label className="form-field">
               <span className="form-label">Display Count</span>
@@ -739,6 +779,7 @@ export default function PreferencesPage() {
                 value={virtualDisplayCount}
                 onChange={(event) => setVirtualDisplayCount(Number(event.target.value))}
               />
+              <span className="form-note">Windows uses SETDISPLAYCOUNT, Linux starts Xvfb.</span>
             </label>
             <div className="form-actions">
               <button className="secondary-button" type="button" onClick={handleCreateVirtualDisplay}>Create</button>

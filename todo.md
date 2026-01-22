@@ -290,6 +290,9 @@
 - [x] Add driver manager status/action backend via virtual-driver-manager.ps1
 - [x] Wire driver manager status/action UI (install/enable/disable/status)
 - [x] Map MTTVirtualDisplayPipe settings toggles (HDR+, SDR10, logging, cursor, spoof) into UI
+- [x] Replace PowerShell driver manager with Rust Windows service (pnputil backend)
+- [x] Add service installer/start/stop commands (admin once) and UI status
+- [ ] Expand install/uninstall to download release + DevCon when _vendor INF missing
 - [ ] Add driver log stream toggle to surface pipe log output
 - [ ] Research macOS virtual display options (dummy display dongle, BetterDisplay CLI, ScreenCaptureKit capture targets)
 - [ ] Determine macOS control surface (install steps, CLI/API, entitlements) and wire into UI

@@ -15,6 +15,7 @@ pub fn set_display_count(count: u32) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn reload_driver() -> Result<(), String> {
     send_command("RELOAD_DRIVER", false)?;
     Ok(())
@@ -94,7 +95,7 @@ fn send_command(command: &str, expect_response: bool) -> Result<Option<Vec<u8>>,
     });
 
     unsafe {
-        CloseHandle(pipe);
+        let _ = CloseHandle(pipe);
     }
 
     result

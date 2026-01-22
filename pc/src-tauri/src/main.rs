@@ -8,6 +8,8 @@ mod display_probe;
 mod driver_manager;
 mod driver_ipc;
 mod linux_vdd;
+mod service_manager;
+mod vdd_protocol;
 mod encoder;
 mod device_registry;
 mod driver_probe;
@@ -162,7 +164,7 @@ fn virtual_display_count() -> u32 {
 }
 
 #[tauri::command]
-fn virtual_driver_status(app_handle: tauri::AppHandle) -> Result<driver_manager::DriverManagerStatus, String> {
+fn virtual_driver_status(app_handle: tauri::AppHandle) -> Result<crate::vdd_protocol::DriverManagerStatus, String> {
     driver_manager::status().map_err(|err| {
         let _ = host_log::append_log(&app_handle, format!("Driver manager status failed: {err}"));
         err
@@ -271,6 +273,44 @@ fn driver_pipe_set_gpu(app_handle: tauri::AppHandle, name: String) -> Result<(),
     })?;
     let _ = host_log::append_log(&app_handle, format!("Driver GPU set: {name}"));
     Ok(())
+}
+
+#[tauri::command]
+fn install_vdd_service(app_handle: tauri::AppHandle) -> Result<(), String> {
+    service_manager::install_service().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Service install failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, "VDD service install requested");
+    Ok(())
+}
+
+#[tauri::command]
+fn start_vdd_service(app_handle: tauri::AppHandle) -> Result<(), String> {
+    service_manager::start_service().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Service start failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, "VDD service start requested");
+    Ok(())
+}
+
+#[tauri::command]
+fn stop_vdd_service(app_handle: tauri::AppHandle) -> Result<(), String> {
+    service_manager::stop_service().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Service stop failed: {err}"));
+        err
+    })?;
+    let _ = host_log::append_log(&app_handle, "VDD service stop requested");
+    Ok(())
+}
+
+#[tauri::command]
+fn query_vdd_service(app_handle: tauri::AppHandle) -> Result<String, String> {
+    service_manager::query_service().map_err(|err| {
+        let _ = host_log::append_log(&app_handle, format!("Service query failed: {err}"));
+        err
+    })
 }
 #[tauri::command]
 fn list_display_modes(_app_handle: tauri::AppHandle, display_id: String) -> Vec<app_state::DisplayMode> {
@@ -591,6 +631,10 @@ fn main() {
             driver_pipe_get_settings,
             driver_pipe_set_toggle,
             driver_pipe_set_gpu,
+            install_vdd_service,
+            start_vdd_service,
+            stop_vdd_service,
+            query_vdd_service,
             create_virtual_display,
             remove_virtual_display,
             set_session_display_target,
