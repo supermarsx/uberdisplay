@@ -43,6 +43,28 @@ pub struct PairedDevice {
     pub transport: String,
     pub status: String,
     pub last_seen: Option<String>,
+    #[serde(default)]
+    pub input_permissions: InputPermissions,
+}
+
+#[derive(Debug, Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InputPermissions {
+    pub enable_input: bool,
+    pub touch: bool,
+    pub pen: bool,
+    pub keyboard: bool,
+}
+
+impl Default for InputPermissions {
+    fn default() -> Self {
+        Self {
+            enable_input: true,
+            touch: true,
+            pen: true,
+            keyboard: true,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
