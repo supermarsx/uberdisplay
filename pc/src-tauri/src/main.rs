@@ -4,6 +4,7 @@ mod app_state;
 mod diagnostics_report;
 mod codec;
 mod capture;
+mod display_probe;
 mod encoder;
 mod device_registry;
 mod driver_probe;
@@ -123,6 +124,11 @@ fn negotiate_codec(
 #[tauri::command]
 fn list_logs(app_handle: tauri::AppHandle) -> Vec<host_log::HostLogEntry> {
     host_log::load_logs(&app_handle)
+}
+
+#[tauri::command]
+fn list_displays() -> Vec<app_state::DisplayInfo> {
+    display_probe::list_displays()
 }
 
 #[tauri::command]
@@ -349,6 +355,7 @@ fn main() {
             list_logs,
             export_logs,
             export_diagnostics,
+            list_displays,
             start_session,
             prepare_session,
             tcp_connect_and_configure,

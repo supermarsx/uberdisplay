@@ -9,6 +9,19 @@ pub struct DriverStatus {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DisplayInfo {
+    pub id: String,
+    pub name: String,
+    pub active: bool,
+    pub primary: bool,
+    pub width: i32,
+    pub height: i32,
+    pub refresh_hz: i32,
+    pub is_virtual: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransportStatus {
     pub tcp_listening: bool,
     pub tcp_connections: u32,
