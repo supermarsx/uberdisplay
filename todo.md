@@ -262,6 +262,7 @@
 - [ ] Implement Media Foundation H.265 encoder (if supported)
 - [x] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
 - [x] Add DXGI capture surface and GPU-friendly frame upload path
+- [x] Add GDI capture scale-to-stream path when sizes mismatch
 - [x] Add DXGI capture health telemetry (timeouts/failures) to diagnostics
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
@@ -278,6 +279,7 @@
 - [x] Add Frame timestamp header (meta flag + 100ns timestamp)
 - [x] Pace host send loop using frame timestamps when available
 - [x] Add session diagnostics report export (JSON)
+- [x] Include DXGI capture stats in diagnostics export
 - [ ] Add encoded sample timestamps and pacing derived from MF output
 - [x] Add MF encoder error mapping to session state (init/output failure)
 - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks

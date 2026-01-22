@@ -17,8 +17,8 @@ use windows::Win32::Graphics::Direct3D11::{
 #[cfg(windows)]
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits, GetDC,
-    ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
-    SRCCOPY,
+    ReleaseDC, SelectObject, SetStretchBltMode, StretchBlt, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
+    DIB_RGB_COLORS, HALFTONE, SRCCOPY,
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Dxgi::{
@@ -29,6 +29,8 @@ use windows::Win32::Graphics::Dxgi::{
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 #[cfg(windows)]
 use windows::core::Interface;
+#[cfg(windows)]
+use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
 
 #[cfg(windows)]
 pub fn capture_nv12(width: i32, height: i32) -> Result<Vec<u8>, String> {
@@ -68,7 +70,30 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
     }
 
     let old = unsafe { SelectObject(mem_dc, bitmap) };
-    let blit_ok = unsafe { BitBlt(mem_dc, 0, 0, width, height, screen_dc, 0, 0, SRCCOPY) };
+    let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    let blit_ok = if screen_width == width && screen_height == height {
+        unsafe { BitBlt(mem_dc, 0, 0, width, height, screen_dc, 0, 0, SRCCOPY) }
+            .is_ok()
+    } else {
+        unsafe {
+            let _ = SetStretchBltMode(mem_dc, HALFTONE);
+            StretchBlt(
+                mem_dc,
+                0,
+                0,
+                width,
+                height,
+                screen_dc,
+                0,
+                0,
+                screen_width,
+                screen_height,
+                SRCCOPY,
+            )
+        }
+        .as_bool()
+    };
 
     let mut info = BITMAPINFO::default();
     info.bmiHeader = BITMAPINFOHEADER {
@@ -106,7 +131,7 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
         ReleaseDC(hwnd, screen_dc);
     }
 
-    if blit_ok.is_ok() && rows > 0 {
+    if blit_ok && rows > 0 {
         Ok(buffer)
     } else {
         Err("GetDIBits failed".to_string())
