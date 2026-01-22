@@ -242,7 +242,7 @@
 - [x] Persist negotiated codec + encoder backend in session state
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
-- [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
+- [x] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
 - [x] Add GDI screen capture fallback to feed NV12 frames
 - [x] Emit `Configure` v2 and `Frame` packets over TCP session
 - [x] Add session health telemetry (fps, bitrate, queue depth) for UI diagnostics
@@ -262,6 +262,7 @@
 - [ ] Implement Media Foundation H.265 encoder (if supported)
 - [x] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
 - [ ] Add DXGI capture surface and GPU-friendly frame upload path
+- [x] Add DXGI capture health telemetry (timeouts/failures) to diagnostics
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats
@@ -275,6 +276,7 @@
 - [x] Add MF encoder activation + type configuration (NV12 -> H.264/H.265)
 - [x] Feed encoder with real NV12 frames (GDI fallback)
 - [x] Add Frame timestamp header (meta flag + 100ns timestamp)
+- [x] Pace host send loop using frame timestamps when available
 - [ ] Add encoded sample timestamps and pacing derived from MF output
 - [x] Add MF encoder error mapping to session state (init/output failure)
 - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks

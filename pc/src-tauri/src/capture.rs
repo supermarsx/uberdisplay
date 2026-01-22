@@ -27,6 +27,8 @@ use windows::Win32::Graphics::Dxgi::{
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
+#[cfg(windows)]
+use windows::core::Interface;
 
 #[cfg(windows)]
 pub fn capture_nv12(width: i32, height: i32) -> Result<Vec<u8>, String> {
@@ -164,12 +166,17 @@ fn clamp_u8(value: i32) -> u8 {
 
 #[cfg(windows)]
 struct DxgiCapture {
+    #[allow(dead_code)]
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     duplication: IDXGIOutputDuplication,
     staging: ID3D11Texture2D,
     width: i32,
     height: i32,
+    timeouts: u32,
+    access_lost: u32,
+    frame_failures: u32,
+    last_frame_bytes: u32,
 }
 
 #[cfg(windows)]
@@ -190,8 +197,12 @@ fn capture_bgra_dxgi(width: i32, height: i32) -> Result<Vec<u8>, String> {
 
     let capture = guard.as_mut().ok_or_else(|| "DXGI capture not initialized".to_string())?;
     match acquire_dxgi_frame(capture) {
-        Ok(frame) => Ok(frame),
+        Ok(frame) => {
+            capture.last_frame_bytes = frame.len() as u32;
+            Ok(frame)
+        }
         Err(err) => {
+            capture.frame_failures = capture.frame_failures.saturating_add(1);
             *guard = None;
             Err(err)
         }
@@ -210,9 +221,9 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
             D3D11_CREATE_DEVICE_BGRA_SUPPORT,
             None,
             D3D11_SDK_VERSION,
-            &mut device,
+            Some(&mut device),
             None,
-            &mut context,
+            Some(&mut context),
         )
         .map_err(|err| format!("D3D11CreateDevice failed: 0x{:08x}", err.code().0))?;
     }
@@ -243,12 +254,17 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
             Quality: 0,
         },
         Usage: D3D11_USAGE_STAGING,
-        BindFlags: D3D11_BIND_FLAG(0),
-        CPUAccessFlags: D3D11_CPU_ACCESS_READ,
+        BindFlags: D3D11_BIND_FLAG(0).0 as u32,
+        CPUAccessFlags: D3D11_CPU_ACCESS_READ.0 as u32,
         MiscFlags: 0,
     };
-    let staging = unsafe { device.CreateTexture2D(&desc, None) }
-        .map_err(|err| format!("CreateTexture2D failed: 0x{:08x}", err.code().0))?;
+    let mut staging: Option<ID3D11Texture2D> = None;
+    unsafe {
+        device
+            .CreateTexture2D(&desc, None, Some(&mut staging))
+            .map_err(|err| format!("CreateTexture2D failed: 0x{:08x}", err.code().0))?;
+    }
+    let staging = staging.ok_or_else(|| "Staging texture unavailable".to_string())?;
 
     Ok(DxgiCapture {
         device,
@@ -257,6 +273,10 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
         staging,
         width,
         height,
+        timeouts: 0,
+        access_lost: 0,
+        frame_failures: 0,
+        last_frame_bytes: 0,
     })
 }
 
@@ -268,7 +288,12 @@ fn acquire_dxgi_frame(capture: &mut DxgiCapture) -> Result<Vec<u8>, String> {
     if let Err(err) = result {
         let code = err.code();
         if code == DXGI_ERROR_WAIT_TIMEOUT || code == DXGI_ERROR_ACCESS_LOST {
-            return Err("DXGI capture timeout".to_string());
+            if code == DXGI_ERROR_WAIT_TIMEOUT {
+                capture.timeouts = capture.timeouts.saturating_add(1);
+                return Err("DXGI capture timeout".to_string());
+            }
+            capture.access_lost = capture.access_lost.saturating_add(1);
+            return Err("DXGI capture access lost".to_string());
         }
         return Err(format!("DXGI AcquireNextFrame failed: 0x{:08x}", code.0));
     }
@@ -287,7 +312,7 @@ fn acquire_dxgi_frame(capture: &mut DxgiCapture) -> Result<Vec<u8>, String> {
     unsafe {
         capture
             .context
-            .Map(&capture.staging, 0, D3D11_MAP_READ, 0, &mut mapped)
+            .Map(&capture.staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped))
             .map_err(|err| format!("DXGI Map failed: 0x{:08x}", err.code().0))?;
     }
 
@@ -308,4 +333,22 @@ fn acquire_dxgi_frame(capture: &mut DxgiCapture) -> Result<Vec<u8>, String> {
         let _ = capture.duplication.ReleaseFrame();
     }
     Ok(buffer)
+}
+
+#[cfg(windows)]
+pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
+    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
+    let guard = store.lock().ok()?;
+    let capture = guard.as_ref()?;
+    Some((
+        capture.timeouts,
+        capture.access_lost,
+        capture.frame_failures,
+        capture.last_frame_bytes,
+    ))
+}
+
+#[cfg(not(windows))]
+pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
+    None
 }

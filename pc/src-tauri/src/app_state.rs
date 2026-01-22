@@ -115,6 +115,10 @@ pub struct SessionStats {
     pub frames_acked: u64,
     pub last_frame_bytes: u32,
     pub queue_depth: u32,
+    pub dxgi_timeouts: u32,
+    pub dxgi_access_lost: u32,
+    pub dxgi_failures: u32,
+    pub dxgi_last_bytes: u32,
 }
 
 impl Default for SessionStats {
@@ -126,6 +130,10 @@ impl Default for SessionStats {
             frames_acked: 0,
             last_frame_bytes: 0,
             queue_depth: 0,
+            dxgi_timeouts: 0,
+            dxgi_access_lost: 0,
+            dxgi_failures: 0,
+            dxgi_last_bytes: 0,
         }
     }
 }

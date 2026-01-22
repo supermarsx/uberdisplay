@@ -37,6 +37,7 @@ pub fn start_streaming(
             };
         let mut awaiting_ack = false;
         let mut last_send = Instant::now();
+        let mut last_timestamp: Option<u64> = None;
         let mut last_stats_at = Instant::now();
         let mut window_bytes = 0u64;
         let mut window_frames = 0u32;
@@ -90,6 +91,8 @@ pub fn start_streaming(
                 let fps_estimate = window_frames as f32 / elapsed;
                 let bitrate_kbps =
                     ((window_bytes as f32 * 8.0) / 1000.0 / elapsed).round() as u32;
+                let (dxgi_timeouts, dxgi_access_lost, dxgi_failures, dxgi_last_bytes) =
+                    crate::capture::dxgi_stats_snapshot().unwrap_or((0, 0, 0, 0));
                 session_state::update_stats(SessionStats {
                     fps: (fps_estimate * 10.0).round() / 10.0,
                     bitrate_kbps,
@@ -97,13 +100,31 @@ pub fn start_streaming(
                     frames_acked,
                     last_frame_bytes: payload_len,
                     queue_depth: if awaiting_ack { 1 } else { 0 },
+                    dxgi_timeouts,
+                    dxgi_access_lost,
+                    dxgi_failures,
+                    dxgi_last_bytes,
                 });
                 window_bytes = 0;
                 window_frames = 0;
                 last_stats_at = Instant::now();
             }
-            let frame_delay = (1000 / fps.max(1)).max(4);
-            thread::sleep(Duration::from_millis(frame_delay as u64));
+            let frame_delay = if let Some(ts) = timestamp_100ns {
+                let delay = if let Some(prev) = last_timestamp {
+                    ts.saturating_sub(prev)
+                } else {
+                    0
+                };
+                last_timestamp = Some(ts);
+                if delay > 0 {
+                    (delay / 10_000).max(4)
+                } else {
+                    (1000 / fps.max(1)).max(4) as u64
+                }
+            } else {
+                (1000 / fps.max(1)).max(4) as u64
+            };
+            thread::sleep(Duration::from_millis(frame_delay));
         }
 
         session_state::reset_stats();

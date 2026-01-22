@@ -38,6 +38,10 @@ type SessionStats = {
   framesAcked: number;
   lastFrameBytes: number;
   queueDepth: number;
+  dxgiTimeouts: number;
+  dxgiAccessLost: number;
+  dxgiFailures: number;
+  dxgiLastBytes: number;
 };
 
 type DeviceForm = {
@@ -87,6 +91,10 @@ const fallbackStats: SessionStats = {
   framesAcked: 0,
   lastFrameBytes: 0,
   queueDepth: 0,
+  dxgiTimeouts: 0,
+  dxgiAccessLost: 0,
+  dxgiFailures: 0,
+  dxgiLastBytes: 0,
 };
 
 export default function HomePage() {
@@ -504,6 +512,10 @@ export default function HomePage() {
             <div>
               <div className="metric-label">Bitrate</div>
               <div className="metric-value">{sessionStats.bitrateKbps} kbps</div>
+            </div>
+            <div>
+              <div className="metric-label">DXGI Drops</div>
+              <div className="metric-value">{sessionStats.dxgiFailures}</div>
             </div>
           </div>
         </section>

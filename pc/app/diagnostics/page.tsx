@@ -39,6 +39,10 @@ type SessionStats = {
   framesAcked: number;
   lastFrameBytes: number;
   queueDepth: number;
+  dxgiTimeouts: number;
+  dxgiAccessLost: number;
+  dxgiFailures: number;
+  dxgiLastBytes: number;
 };
 
 const fallbackLogs: HostLogEntry[] = [
@@ -54,6 +58,10 @@ const fallbackStats: SessionStats = {
   framesAcked: 0,
   lastFrameBytes: 0,
   queueDepth: 0,
+  dxgiTimeouts: 0,
+  dxgiAccessLost: 0,
+  dxgiFailures: 0,
+  dxgiLastBytes: 0,
 };
 
 export default function DiagnosticsPage() {
@@ -219,6 +227,18 @@ export default function DiagnosticsPage() {
               <div className="metric-value">
                 {sessionStats.framesSent} / {sessionStats.framesAcked}
               </div>
+            </div>
+            <div>
+              <div className="metric-label">DXGI Timeouts</div>
+              <div className="metric-value">{sessionStats.dxgiTimeouts}</div>
+            </div>
+            <div>
+              <div className="metric-label">DXGI Access Lost</div>
+              <div className="metric-value">{sessionStats.dxgiAccessLost}</div>
+            </div>
+            <div>
+              <div className="metric-label">DXGI Failures</div>
+              <div className="metric-value">{sessionStats.dxgiFailures}</div>
             </div>
           </div>
           {error && <div className="form-error">{error}</div>}
