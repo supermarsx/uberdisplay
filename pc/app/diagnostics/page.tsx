@@ -8,6 +8,7 @@ type AppStatus = {
   driver: { installed: boolean; active: boolean };
   transport: { tcpListening: boolean; tcpConnections: number; aoapAttached: boolean };
   settings: { codec: string; quality: number; refreshCapHz: number; inputMode: string };
+  session: { lifecycle: string };
   devices: Array<{
     id: string;
     name: string;
@@ -22,6 +23,7 @@ const fallbackStatus: AppStatus = {
   driver: { installed: false, active: false },
   transport: { tcpListening: false, tcpConnections: 0, aoapAttached: false },
   settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, inputMode: "Touch + Pen" },
+  session: { lifecycle: "idle" },
   devices: [],
 };
 
@@ -147,6 +149,8 @@ export default function DiagnosticsPage() {
     }
     return new Date(timestamp * 1000).toLocaleTimeString();
   };
+  const sessionLifecycle = status.session?.lifecycle ?? "idle";
+  const sessionLabel = sessionLifecycle.charAt(0).toUpperCase() + sessionLifecycle.slice(1);
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -197,6 +201,10 @@ export default function DiagnosticsPage() {
             <div>
               <div className="metric-label">Active Sessions</div>
               <div className="metric-value">{status.transport.tcpConnections}</div>
+            </div>
+            <div>
+              <div className="metric-label">Session</div>
+              <div className="metric-value">{sessionLabel}</div>
             </div>
             <div>
               <div className="metric-label">Encoder FPS</div>

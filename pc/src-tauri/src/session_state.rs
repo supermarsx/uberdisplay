@@ -5,6 +5,13 @@ use crate::codec::CodecId;
 use crate::encoder::EncoderBackend;
 
 #[derive(Debug, Clone)]
+pub struct SessionConfigSnapshot {
+    pub width: i32,
+    pub height: i32,
+    pub encoder_id: i32,
+}
+
+#[derive(Debug, Clone)]
 pub struct SessionState {
     pub codec_id: Option<CodecId>,
     pub encoder_backend: Option<EncoderBackend>,
@@ -12,6 +19,7 @@ pub struct SessionState {
     pub input_permissions: crate::app_state::InputPermissions,
     pub stats: SessionStats,
     pub lifecycle: SessionLifecycle,
+    pub config: Option<SessionConfigSnapshot>,
 }
 
 static SESSION_STATE: OnceLock<Mutex<SessionState>> = OnceLock::new();
@@ -24,6 +32,7 @@ fn state_store() -> &'static Mutex<SessionState> {
         input_permissions: crate::app_state::InputPermissions::default(),
         stats: SessionStats::default(),
         lifecycle: SessionLifecycle::Idle,
+        config: None,
     }))
 }
 
@@ -71,6 +80,23 @@ pub fn update_stats(stats: SessionStats) {
     }
 }
 
+pub fn update_config(width: i32, height: i32, encoder_id: i32) {
+    if let Ok(mut state) = state_store().lock() {
+        state.config = Some(SessionConfigSnapshot {
+            width,
+            height,
+            encoder_id,
+        });
+    }
+}
+
+pub fn config_snapshot() -> Option<SessionConfigSnapshot> {
+    state_store()
+        .lock()
+        .ok()
+        .and_then(|state| state.config.clone())
+}
+
 pub fn reset_stats() {
     if let Ok(mut state) = state_store().lock() {
         state.stats = SessionStats::default();
@@ -95,5 +121,6 @@ pub fn snapshot() -> SessionState {
             input_permissions: crate::app_state::InputPermissions::default(),
             stats: SessionStats::default(),
             lifecycle: SessionLifecycle::Idle,
+            config: None,
         })
 }

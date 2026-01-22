@@ -8,6 +8,8 @@ use std::thread;
 use crate::protocol::framing::write_stream_chunks;
 use crate::protocol::handshake::build_host_handshake;
 use crate::protocol::packets::{parse_client_packet, ClientPacket};
+use crate::session_state;
+use crate::app_state::SessionLifecycle;
 
 static TCP_STREAM: OnceLock<Mutex<Option<TcpStream>>> = OnceLock::new();
 static LAST_CLIENT_CODEC_MASK: OnceLock<Mutex<Option<u32>>> = OnceLock::new();
@@ -112,6 +114,10 @@ pub fn disconnect() -> Result<(), String> {
     Ok(())
 }
 
+pub fn is_connected() -> bool {
+    connected_flag().load(Ordering::SeqCst)
+}
+
 pub fn send_framed_packet(packet: &[u8]) -> Result<(), String> {
     let mut framed = Vec::with_capacity(4 + packet.len());
     framed.extend_from_slice(&(packet.len() as u32).to_le_bytes());
@@ -178,7 +184,10 @@ fn start_reader(mut stream: TcpStream) {
         crate::stream_loop::stop_streaming();
         crate::session_state::reset_stats();
         if reconnect_enabled_flag().load(Ordering::SeqCst) {
+            session_state::update_lifecycle(SessionLifecycle::Error);
             attempt_reconnect();
+        } else {
+            session_state::update_lifecycle(SessionLifecycle::Idle);
         }
     });
 }
@@ -194,6 +203,7 @@ fn attempt_reconnect() {
     thread::spawn(move || {
         let mut attempt = 0;
         let backoff_ms = [1500, 3000, 6000];
+        session_state::update_lifecycle(SessionLifecycle::Connecting);
         loop {
             if connected_flag().load(Ordering::SeqCst) {
                 break;
@@ -219,6 +229,7 @@ fn attempt_reconnect() {
                     let _ = send_framed_packet(&caps);
                     let _ = send_framed_packet(&configure);
                 }
+                session_state::update_lifecycle(SessionLifecycle::Configured);
                 break;
             }
 
@@ -228,6 +239,9 @@ fn attempt_reconnect() {
             let delay = backoff_ms[attempt];
             attempt += 1;
             thread::sleep(std::time::Duration::from_millis(delay));
+        }
+        if !connected_flag().load(Ordering::SeqCst) {
+            session_state::update_lifecycle(SessionLifecycle::Error);
         }
         reconnecting_flag().store(false, Ordering::SeqCst);
     });

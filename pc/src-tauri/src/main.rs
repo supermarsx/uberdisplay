@@ -22,6 +22,9 @@ fn app_status(app_handle: tauri::AppHandle) -> app_state::AppStatus {
     status.transport = transport_probe::probe_transport_status();
     status.devices = device_registry::load_devices(&app_handle);
     status.settings = settings_registry::load_settings(&app_handle);
+    status.session = app_state::SessionOverview {
+        lifecycle: session_state::lifecycle_snapshot(),
+    };
     status
 }
 
@@ -131,11 +134,21 @@ fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     let state = session_state::snapshot();
     let codec_id = state.codec_id.ok_or_else(|| "No negotiated codec".to_string())?;
+    let config = session_state::config_snapshot().ok_or_else(|| "No session config".to_string())?;
     let settings = settings_registry::load_settings(&app_handle);
     let fps = settings.refresh_cap_hz.max(1) as u32;
     let bitrate_kbps = (settings.quality as u32 * 80).max(500);
     let keyframe_interval = 60;
-    stream_loop::start_streaming(codec_id, 1, bitrate_kbps, fps, keyframe_interval)?;
+    stream_loop::start_streaming(
+        codec_id,
+        config.encoder_id,
+        config.width,
+        config.height,
+        bitrate_kbps,
+        fps,
+        keyframe_interval,
+    )?;
+    session_state::update_lifecycle(app_state::SessionLifecycle::Streaming);
     let _ = host_log::append_log(&app_handle, "Start session requested");
     Ok(())
 }
@@ -160,10 +173,16 @@ fn prepare_session(
         encoder_id,
         client_codec_mask,
         preferred_codec: preferred,
+    })
+    .map_err(|err| {
+        session_state::update_lifecycle(app_state::SessionLifecycle::Error);
+        err
     })?;
     if let Some(codec_id) = codec::codec_id_from_name(&result.selection.codec_name) {
         session_state::update_codec(codec_id);
     }
+    session_state::update_config(width, height, encoder_id);
+    session_state::update_lifecycle(app_state::SessionLifecycle::Configured);
     let _ = host_log::append_log(
         &app_handle,
         format!("Prepared session codec {}", result.selection.codec_name),
@@ -183,7 +202,11 @@ fn tcp_connect_and_configure(
     encoder_id: i32,
     client_codec_mask: u32,
 ) -> Result<app_state::CodecSelection, String> {
-    host_transport::connect(&host, port)?;
+    session_state::update_lifecycle(app_state::SessionLifecycle::Connecting);
+    if let Err(err) = host_transport::connect(&host, port) {
+        session_state::update_lifecycle(app_state::SessionLifecycle::Error);
+        return Err(err);
+    }
 
     let host_caps = protocol::packets::CapabilitiesPacket {
         codec_mask: codec::host_codec_mask(),
@@ -202,10 +225,15 @@ fn tcp_connect_and_configure(
         encoder_id,
         client_codec_mask,
         preferred_codec: preferred,
+    })
+    .map_err(|err| {
+        session_state::update_lifecycle(app_state::SessionLifecycle::Error);
+        err
     })?;
     if let Some(codec_id) = codec::codec_id_from_name(&result.selection.codec_name) {
         session_state::update_codec(codec_id);
     }
+    session_state::update_config(width, height, encoder_id);
     host_transport::send_framed_packet(&result.configure_bytes)?;
     host_transport::set_last_session(
         host,
@@ -213,6 +241,7 @@ fn tcp_connect_and_configure(
         caps_packet.clone(),
         result.configure_bytes.clone(),
     );
+    session_state::update_lifecycle(app_state::SessionLifecycle::Configured);
     let backend = encoder::select_backend(None);
     session_state::update_backend(backend);
     Ok(result.selection)
@@ -220,7 +249,9 @@ fn tcp_connect_and_configure(
 
 #[tauri::command]
 fn tcp_disconnect() -> Result<(), String> {
-    host_transport::disconnect()
+    host_transport::disconnect()?;
+    session_state::update_lifecycle(app_state::SessionLifecycle::Idle);
+    Ok(())
 }
 
 #[tauri::command]
@@ -283,6 +314,12 @@ fn set_session_input_permissions(
 #[tauri::command]
 fn stop_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     stream_loop::stop_streaming();
+    let lifecycle = if host_transport::is_connected() {
+        app_state::SessionLifecycle::Configured
+    } else {
+        app_state::SessionLifecycle::Idle
+    };
+    session_state::update_lifecycle(lifecycle);
     let _ = host_log::append_log(&app_handle, "Stop session requested");
     Ok(())
 }

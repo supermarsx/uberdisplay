@@ -8,6 +8,7 @@ type AppStatus = {
   driver: { installed: boolean; active: boolean };
   transport: { tcpListening: boolean; tcpConnections: number; aoapAttached: boolean };
   settings: { codec: string; quality: number; refreshCapHz: number; inputMode: string };
+  session: { lifecycle: string };
   devices: Array<{
     id: string;
     name: string;
@@ -47,6 +48,7 @@ const fallbackStatus: AppStatus = {
   driver: { installed: false, active: false },
   transport: { tcpListening: true, tcpConnections: 0, aoapAttached: false },
   settings: { codec: "H.264 High", quality: 80, refreshCapHz: 120, inputMode: "Touch + Pen" },
+  session: { lifecycle: "idle" },
   devices: [],
 };
 
@@ -347,6 +349,8 @@ export default function HomePage() {
   const wifiChip = status.transport.tcpListening
     ? `Wi-Fi Ready (${status.transport.tcpConnections})`
     : "Wi-Fi Offline";
+  const sessionLifecycle = status.session?.lifecycle ?? "idle";
+  const sessionLabel = sessionLifecycle.charAt(0).toUpperCase() + sessionLifecycle.slice(1);
   const [inputControls, setInputControls] = useState({
     enableInput: true,
     captureOnConnect: true,
@@ -449,6 +453,10 @@ export default function HomePage() {
             <div>
               <div className="metric-label">Stream</div>
               <div className="metric-value">2560 x 1600 @ 60 FPS</div>
+            </div>
+            <div>
+              <div className="metric-label">Session</div>
+              <div className="metric-value">{sessionLabel}</div>
             </div>
           </div>
         </section>

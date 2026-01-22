@@ -19,6 +19,8 @@ fn running_flag() -> &'static AtomicBool {
 pub fn start_streaming(
     codec_id: CodecId,
     encoder_id: i32,
+    width: i32,
+    height: i32,
     bitrate_kbps: u32,
     fps: u32,
     keyframe_interval: u32,
@@ -27,7 +29,7 @@ pub fn start_streaming(
         return Ok(());
     }
 
-    let mut encoder = MfEncoder::new(codec_id, 0, 0, bitrate_kbps, fps, keyframe_interval)?;
+    let mut encoder = MfEncoder::new(codec_id, width, height, bitrate_kbps, fps, keyframe_interval)?;
 
     thread::spawn(move || {
         let mut awaiting_ack = false;

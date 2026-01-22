@@ -254,7 +254,7 @@
 
 ## PC Pipeline Buildout (Detailed)
 - [ ] Build host TCP session manager (connect, handshake, negotiate, configure, send loop)
-- [ ] Add session lifecycle states + error transitions for UI (idle/connecting/streaming/error)
+- [x] Add session lifecycle states + error transitions for UI (idle/connecting/streaming/error)
 - [ ] Implement Media Foundation H.264 encoder with low-latency settings (no B-frames, short GOP)
 - [ ] Implement Media Foundation H.265 encoder (if supported)
 - [ ] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
