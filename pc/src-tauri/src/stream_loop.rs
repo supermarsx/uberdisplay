@@ -93,6 +93,9 @@ pub fn start_streaming(
                     ((window_bytes as f32 * 8.0) / 1000.0 / elapsed).round() as u32;
                 let (dxgi_timeouts, dxgi_access_lost, dxgi_failures, dxgi_last_bytes) =
                     crate::capture::dxgi_stats_snapshot().unwrap_or((0, 0, 0, 0));
+                let (capture_path, capture_scale) =
+                    crate::capture::capture_info_snapshot()
+                        .unwrap_or(("Unknown".to_string(), "Unknown".to_string()));
                 session_state::update_stats(SessionStats {
                     fps: (fps_estimate * 10.0).round() / 10.0,
                     bitrate_kbps,
@@ -104,6 +107,8 @@ pub fn start_streaming(
                     dxgi_access_lost,
                     dxgi_failures,
                     dxgi_last_bytes,
+                    capture_path,
+                    capture_scale,
                 });
                 window_bytes = 0;
                 window_frames = 0;

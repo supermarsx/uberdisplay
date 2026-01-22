@@ -264,6 +264,7 @@
 - [x] Add DXGI capture surface and GPU-friendly frame upload path
 - [x] Add GDI capture scale-to-stream path when sizes mismatch
 - [x] Add DXGI capture health telemetry (timeouts/failures) to diagnostics
+- [x] Show capture path + scale in diagnostics and home UI
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats

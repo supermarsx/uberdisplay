@@ -43,6 +43,8 @@ type SessionStats = {
   dxgiAccessLost: number;
   dxgiFailures: number;
   dxgiLastBytes: number;
+  capturePath: string;
+  captureScale: string;
 };
 
 const fallbackLogs: HostLogEntry[] = [
@@ -62,6 +64,8 @@ const fallbackStats: SessionStats = {
   dxgiAccessLost: 0,
   dxgiFailures: 0,
   dxgiLastBytes: 0,
+  capturePath: "Unknown",
+  captureScale: "Unknown",
 };
 
 export default function DiagnosticsPage() {
@@ -250,6 +254,14 @@ export default function DiagnosticsPage() {
             <div>
               <div className="metric-label">DXGI Failures</div>
               <div className="metric-value">{sessionStats.dxgiFailures}</div>
+            </div>
+            <div>
+              <div className="metric-label">Capture Path</div>
+              <div className="metric-value">{sessionStats.capturePath}</div>
+            </div>
+            <div>
+              <div className="metric-label">Capture Scale</div>
+              <div className="metric-value">{sessionStats.captureScale}</div>
             </div>
           </div>
           {error && <div className="form-error">{error}</div>}

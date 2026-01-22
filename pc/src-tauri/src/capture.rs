@@ -36,8 +36,10 @@ use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_
 pub fn capture_nv12(width: i32, height: i32) -> Result<Vec<u8>, String> {
     let aligned_width = width.max(2) & !1;
     let aligned_height = height.max(2) & !1;
-    let bgra = capture_bgra_dxgi(aligned_width, aligned_height)
-        .or_else(|_| capture_bgra_gdi(aligned_width, aligned_height))?;
+    let bgra = match capture_bgra_dxgi(aligned_width, aligned_height) {
+        Ok(frame) => frame,
+        Err(_) => capture_bgra_gdi(aligned_width, aligned_height)?,
+    };
     Ok(bgra_to_nv12(&bgra, aligned_width, aligned_height))
 }
 
@@ -72,6 +74,11 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
     let old = unsafe { SelectObject(mem_dc, bitmap) };
     let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
     let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    let scale_mode = if screen_width == width && screen_height == height {
+        "1:1"
+    } else {
+        "Scaled"
+    };
     let blit_ok = if screen_width == width && screen_height == height {
         unsafe { BitBlt(mem_dc, 0, 0, width, height, screen_dc, 0, 0, SRCCOPY) }
             .is_ok()
@@ -130,6 +137,8 @@ fn capture_bgra_gdi(width: i32, height: i32) -> Result<Vec<u8>, String> {
         DeleteDC(mem_dc);
         ReleaseDC(hwnd, screen_dc);
     }
+
+    update_capture_info("GDI", scale_mode);
 
     if blit_ok && rows > 0 {
         Ok(buffer)
@@ -202,6 +211,8 @@ struct DxgiCapture {
     access_lost: u32,
     frame_failures: u32,
     last_frame_bytes: u32,
+    capture_path: String,
+    capture_scale: String,
 }
 
 #[cfg(windows)]
@@ -245,6 +256,8 @@ fn capture_bgra_dxgi(width: i32, height: i32) -> Result<Vec<u8>, String> {
         }
     };
     capture.last_frame_bytes = frame.len() as u32;
+    capture.capture_path = "DXGI".to_string();
+    capture.capture_scale = "1:1".to_string();
     Ok(frame)
 }
 
@@ -340,6 +353,8 @@ fn init_dxgi_capture(width: i32, height: i32) -> Result<DxgiCapture, String> {
         access_lost: 0,
         frame_failures: 0,
         last_frame_bytes: 0,
+        capture_path: "DXGI".to_string(),
+        capture_scale: "1:1".to_string(),
     })
 }
 
@@ -443,4 +458,30 @@ pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
 #[cfg(not(windows))]
 pub fn dxgi_stats_snapshot() -> Option<(u32, u32, u32, u32)> {
     None
+}
+
+#[cfg(windows)]
+pub fn capture_info_snapshot() -> Option<(String, String)> {
+    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
+    let guard = store.lock().ok()?;
+    if let Some(capture) = guard.as_ref() {
+        return Some((capture.capture_path.clone(), capture.capture_scale.clone()));
+    }
+    Some(("GDI".to_string(), "Scaled".to_string()))
+}
+
+#[cfg(not(windows))]
+pub fn capture_info_snapshot() -> Option<(String, String)> {
+    None
+}
+
+#[cfg(windows)]
+fn update_capture_info(path: &str, scale: &str) {
+    let store = DXGI_CAPTURE.get_or_init(|| Mutex::new(None));
+    if let Ok(mut guard) = store.lock() {
+        if let Some(capture) = guard.as_mut() {
+            capture.capture_path = path.to_string();
+            capture.capture_scale = scale.to_string();
+        }
+    }
 }

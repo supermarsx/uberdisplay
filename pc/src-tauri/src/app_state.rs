@@ -119,6 +119,8 @@ pub struct SessionStats {
     pub dxgi_access_lost: u32,
     pub dxgi_failures: u32,
     pub dxgi_last_bytes: u32,
+    pub capture_path: String,
+    pub capture_scale: String,
 }
 
 impl Default for SessionStats {
@@ -134,6 +136,8 @@ impl Default for SessionStats {
             dxgi_access_lost: 0,
             dxgi_failures: 0,
             dxgi_last_bytes: 0,
+            capture_path: "Unknown".to_string(),
+            capture_scale: "Unknown".to_string(),
         }
     }
 }
