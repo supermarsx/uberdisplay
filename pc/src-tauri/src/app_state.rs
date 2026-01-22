@@ -86,6 +86,30 @@ pub struct CodecSelection {
     pub client_mask: u32,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionStats {
+    pub fps: f32,
+    pub bitrate_kbps: u32,
+    pub frames_sent: u64,
+    pub frames_acked: u64,
+    pub last_frame_bytes: u32,
+    pub queue_depth: u32,
+}
+
+impl Default for SessionStats {
+    fn default() -> Self {
+        Self {
+            fps: 0.0,
+            bitrate_kbps: 0,
+            frames_sent: 0,
+            frames_acked: 0,
+            last_frame_bytes: 0,
+            queue_depth: 0,
+        }
+    }
+}
+
 impl Default for AppStatus {
     fn default() -> Self {
         Self {
