@@ -237,7 +237,7 @@
 
 ## PC Host Implementation (Windows-first)
 - [x] Add host TCP reader loop for Android `Capabilities` + `FrameDone`
-- [ ] Persist negotiated codec + encoder backend in session state
+- [x] Persist negotiated codec + encoder backend in session state
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
 - [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
 - [ ] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
@@ -250,3 +250,20 @@
 - [ ] Define codec profile/level mapping for EVC/LCEVC in Configure v2
 - [ ] Add host-side software fallback stubs for EVC/LCEVC (no-op until real encoder wired)
 - [ ] Update Android decoder capability probing for EVC/LCEVC if MediaCodec exposes support
+
+## PC Pipeline Buildout (Detailed)
+- [ ] Build host TCP session manager (connect, handshake, negotiate, configure, send loop)
+- [ ] Add session lifecycle states + error transitions for UI (idle/connecting/streaming/error)
+- [ ] Implement Media Foundation H.264 encoder with low-latency settings (no B-frames, short GOP)
+- [ ] Implement Media Foundation H.265 encoder (if supported)
+- [ ] Add encoder parameter controls (bitrate/fps/keyframe interval) mapped from settings
+- [ ] Add DXGI capture surface and GPU-friendly frame upload path
+- [ ] Implement frame pacing loop with backpressure using FrameDone ack
+- [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
+- [ ] Add session logs + export hooks for pipeline stats
+
+## Remote Input Controls (PC UI + Host)
+- [ ] Add input capture controls (enable/touch/pen/keyboard) to PC session settings
+- [ ] Add host-side input filter flags and apply to incoming packets
+- [ ] Add per-device input permissions and persistence
+- [ ] Add command packet to toggle input modes per session

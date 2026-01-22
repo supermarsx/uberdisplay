@@ -235,6 +235,19 @@ export default function HomePage() {
     }
   };
 
+  const handleInputToggle = async (label: string, enabled: boolean) => {
+    try {
+      await invokeTauri("record_action", {
+        message: `Remote input ${label} ${enabled ? "enabled" : "disabled"}`,
+      });
+      setNotice(`Remote input ${label} ${enabled ? "enabled" : "disabled"}.`);
+      setError(null);
+    } catch (err) {
+      setError("Unable to update remote input.");
+      console.error(err);
+    }
+  };
+
   const codecMaskFromForm = () => {
     let mask = 0;
     if (tcpForm.codecs.h264) mask |= 1 << 0;
@@ -286,6 +299,13 @@ export default function HomePage() {
   const wifiChip = status.transport.tcpListening
     ? `Wi-Fi Ready (${status.transport.tcpConnections})`
     : "Wi-Fi Offline";
+  const [inputControls, setInputControls] = useState({
+    enableInput: true,
+    captureOnConnect: true,
+    touch: true,
+    pen: true,
+    keyboard: true,
+  });
 
   const formatLastSeen = (value?: string | null) => {
     if (!value) {
@@ -703,6 +723,73 @@ export default function HomePage() {
               <div className="setting-label">Input</div>
               <div className="setting-value">{status.settings.inputMode}</div>
             </div>
+          </div>
+          <div className="divider" />
+          <div className="card-header">
+            <div className="card-title">Remote Input</div>
+            <div className="card-subtitle">Control input capture from the device</div>
+          </div>
+          <div className="form-toggle-row">
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={inputControls.enableInput}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setInputControls({ ...inputControls, enableInput: next });
+                  handleInputToggle("master", next);
+                }}
+              />
+              Enable Input
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={inputControls.captureOnConnect}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setInputControls({ ...inputControls, captureOnConnect: next });
+                  handleInputToggle("auto-capture", next);
+                }}
+              />
+              Capture on Connect
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={inputControls.touch}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setInputControls({ ...inputControls, touch: next });
+                  handleInputToggle("touch", next);
+                }}
+              />
+              Touch
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={inputControls.pen}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setInputControls({ ...inputControls, pen: next });
+                  handleInputToggle("pen", next);
+                }}
+              />
+              Pen
+            </label>
+            <label className="form-toggle">
+              <input
+                type="checkbox"
+                checked={inputControls.keyboard}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setInputControls({ ...inputControls, keyboard: next });
+                  handleInputToggle("keyboard", next);
+                }}
+              />
+              Keyboard
+            </label>
           </div>
         </section>
       </main>
