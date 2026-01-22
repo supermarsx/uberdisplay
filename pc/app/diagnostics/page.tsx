@@ -308,7 +308,7 @@ export default function DiagnosticsPage() {
           </div>
         </section>
 
-        <section className="card connect-card">
+        <section className="card connect-card log-card">
           <div className="card-header log-header">
             <div>
               <div className="card-title">Event Log</div>

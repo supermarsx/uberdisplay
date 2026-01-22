@@ -325,6 +325,45 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
+.accordion {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 12, 10, 0.6);
+  overflow: hidden;
+}
+
+.accordion summary {
+  list-style: none;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion summary::after {
+  content: "▾";
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.accordion[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  padding: 0 14px 14px;
+}
+
 .status-card {
   grid-column: span 5;
 }
@@ -416,6 +455,19 @@ body {
 .status-metrics {
   display: grid;
   gap: 10px;
+}
+
+.status-metrics.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.status-metrics.compact .metric-label {
+  font-size: 11px;
+}
+
+.status-metrics.compact .metric-value {
+  font-size: 14px;
 }
 
 .metric-label {
@@ -685,6 +737,18 @@ body {
 
 .content-grid::-webkit-scrollbar-thumb:hover {
   background: rgba(230, 222, 201, 0.5);
+}
+
+.log-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.log-card .log-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
 }
 
 .tab-bar {

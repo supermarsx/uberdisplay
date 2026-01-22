@@ -47,17 +47,6 @@ type SessionStats = {
   captureScale: string;
 };
 
-type DisplayInfo = {
-  id: string;
-  name: string;
-  active: boolean;
-  primary: boolean;
-  width: number;
-  height: number;
-  refreshHz: number;
-  isVirtual: boolean;
-};
-
 type DeviceForm = {
   name: string;
   transport: string;
@@ -116,10 +105,6 @@ const fallbackStats: SessionStats = {
 export default function HomePage() {
   const [status, setStatus] = useState<AppStatus>(fallbackStatus);
   const [devices, setDevices] = useState<AppStatus["devices"]>(fallbackStatus.devices);
-  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
-  const [virtualDisplays, setVirtualDisplays] = useState<DisplayInfo[]>([]);
-  const [displayTarget, setDisplayTarget] = useState("auto");
-  const [virtualDisplayLabel, setVirtualDisplayLabel] = useState("UberDisplay");
   const [pairingOpen, setPairingOpen] = useState(false);
   const [form, setForm] = useState<DeviceForm>(initialForm);
   const [toast, setToast] = useState<ToastState>(null);
@@ -164,34 +149,6 @@ export default function HomePage() {
       }
     };
 
-    const loadDisplays = async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/tauri");
-        const data = await invoke<DisplayInfo[]>("list_displays");
-        if (!cancelled) {
-          setDisplays(data ?? []);
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setDisplays([]);
-        }
-      }
-    };
-
-    const loadVirtualDisplays = async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/tauri");
-        const data = await invoke<DisplayInfo[]>("list_virtual_displays");
-        if (!cancelled) {
-          setVirtualDisplays(data ?? []);
-        }
-      } catch (_error) {
-        if (!cancelled) {
-          setVirtualDisplays([]);
-        }
-      }
-    };
-
     const loadSessionStats = async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/tauri");
@@ -207,8 +164,6 @@ export default function HomePage() {
     };
 
     loadStatus();
-    loadDisplays();
-    loadVirtualDisplays();
     loadSessionStats();
     statsTimer = setInterval(loadSessionStats, 2500);
     return () => {
@@ -356,39 +311,6 @@ export default function HomePage() {
     }
   };
 
-  const handleAddVirtualDisplay = async () => {
-    try {
-      await invokeTauri("add_virtual_display");
-      pushToast("Virtual display requested.", "success");
-    } catch (err) {
-      pushToast("Unable to add virtual display.", "error");
-      console.error(err);
-    }
-  };
-
-  const handleInputToggle = async (
-    label: string,
-    enabled: boolean,
-    nextPermissions: typeof inputControls
-  ) => {
-    try {
-      await invokeTauri("set_session_input_permissions", {
-        permissions: {
-          enableInput: nextPermissions.enableInput,
-          touch: nextPermissions.touch,
-          pen: nextPermissions.pen,
-          keyboard: nextPermissions.keyboard,
-        },
-      });
-      await invokeTauri("record_action", {
-        message: `Remote input ${label} ${enabled ? "enabled" : "disabled"}`,
-      });
-      pushToast(`Remote input ${label} ${enabled ? "enabled" : "disabled"}.`, "success");
-    } catch (err) {
-      pushToast("Unable to update remote input.", "error");
-      console.error(err);
-    }
-  };
 
   const codecMaskFromForm = () => {
     let mask = 0;
@@ -431,36 +353,6 @@ export default function HomePage() {
     }
   };
 
-  const handleDisplayTargetSave = async () => {
-    try {
-      const payload = displayTarget === "auto" ? null : displayTarget;
-      await invokeTauri("set_session_display_target", { displayId: payload });
-      pushToast("Display target updated.", "success");
-    } catch (err) {
-      pushToast("Unable to update display target.", "error");
-      console.error(err);
-    }
-  };
-
-  const handleCreateVirtualDisplay = async () => {
-    try {
-      await invokeTauri("create_virtual_display", { label: virtualDisplayLabel });
-      pushToast("Virtual display creation requested.", "success");
-    } catch (err) {
-      pushToast("Unable to create virtual display.", "error");
-      console.error(err);
-    }
-  };
-
-  const handleRemoveVirtualDisplay = async (displayId: string) => {
-    try {
-      await invokeTauri("remove_virtual_display", { displayId });
-      pushToast("Virtual display removal requested.", "success");
-    } catch (err) {
-      pushToast("Unable to remove virtual display.", "error");
-      console.error(err);
-    }
-  };
   const driverChip = status.driver.installed
     ? status.driver.active
       ? "Driver OK"
@@ -472,14 +364,6 @@ export default function HomePage() {
     : "Wi-Fi Offline";
   const sessionLifecycle = status.session?.lifecycle ?? "idle";
   const sessionLabel = sessionLifecycle.charAt(0).toUpperCase() + sessionLifecycle.slice(1);
-  const [inputControls, setInputControls] = useState({
-    enableInput: true,
-    captureOnConnect: true,
-    touch: true,
-    pen: true,
-    keyboard: true,
-  });
-
   const formatLastSeen = (value?: string | null) => {
     if (!value) {
       return "";
@@ -557,7 +441,7 @@ export default function HomePage() {
               {wifiChip}
             </div>
           </div>
-          <div className="status-metrics">
+          <div className="status-metrics compact">
             <div>
               <div className="metric-label">Active Display</div>
               <div className="metric-value">Virtual Canvas 01</div>
@@ -587,14 +471,6 @@ export default function HomePage() {
             <div>
               <div className="metric-label">Bitrate</div>
               <div className="metric-value">{sessionStats.bitrateKbps} kbps</div>
-            </div>
-            <div>
-              <div className="metric-label">DXGI Drops</div>
-              <div className="metric-value">{sessionStats.dxgiFailures}</div>
-            </div>
-            <div>
-              <div className="metric-label">Capture</div>
-              <div className="metric-value">{sessionStats.capturePath}</div>
             </div>
           </div>
         </section>
@@ -776,177 +652,182 @@ export default function HomePage() {
             <div className="card-title">TCP Session</div>
             <div className="card-subtitle">Manual connect + configure</div>
           </div>
-          <form className="pair-form settings-form">
-            <div className="form-grid">
-              <label className="form-field">
-                <span className="form-label">Device IP</span>
-                <input
-                  className="form-input"
-                  value={tcpForm.host}
-                  onChange={(event) => setTcpForm({ ...tcpForm, host: event.target.value })}
-                  placeholder="192.168.1.42"
-                  required
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Port</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.port}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, port: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Width</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.width}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, width: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Height</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.height}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, height: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Host Width</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.hostWidth}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, hostWidth: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Host Height</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.hostHeight}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, hostHeight: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="form-field">
-                <span className="form-label">Encoder Id</span>
-                <input
-                  className="form-input"
-                  type="number"
-                  value={tcpForm.encoderId}
-                  onChange={(event) =>
-                    setTcpForm({ ...tcpForm, encoderId: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <div className="form-field">
-                <span className="form-label">Client Codecs</span>
-                <div className="form-toggle-row">
-                  <label className="form-toggle">
+          <details className="accordion">
+            <summary>Open TCP Session</summary>
+            <div className="accordion-body">
+              <form className="pair-form settings-form">
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span className="form-label">Device IP</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.h265}
+                      className="form-input"
+                      value={tcpForm.host}
+                      onChange={(event) => setTcpForm({ ...tcpForm, host: event.target.value })}
+                      placeholder="192.168.1.42"
+                      required
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="form-label">Port</span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.port}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, h265: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, port: Number(event.target.value) })
                       }
                     />
-                    H.265
                   </label>
-                  <label className="form-toggle">
+                  <label className="form-field">
+                    <span className="form-label">Width</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.av1}
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.width}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, av1: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, width: Number(event.target.value) })
                       }
                     />
-                    AV1
                   </label>
-                  <label className="form-toggle">
+                  <label className="form-field">
+                    <span className="form-label">Height</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.h264}
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.height}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, h264: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, height: Number(event.target.value) })
                       }
                     />
-                    H.264
                   </label>
-                  <label className="form-toggle">
+                  <label className="form-field">
+                    <span className="form-label">Host Width</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.vp9}
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.hostWidth}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, vp9: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, hostWidth: Number(event.target.value) })
                       }
                     />
-                    VP9
                   </label>
-                  <label className="form-toggle">
+                  <label className="form-field">
+                    <span className="form-label">Host Height</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.evc}
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.hostHeight}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, evc: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, hostHeight: Number(event.target.value) })
                       }
                     />
-                    EVC
                   </label>
-                  <label className="form-toggle">
+                  <label className="form-field">
+                    <span className="form-label">Encoder Id</span>
                     <input
-                      type="checkbox"
-                      checked={tcpForm.codecs.lcevc}
+                      className="form-input"
+                      type="number"
+                      value={tcpForm.encoderId}
                       onChange={(event) =>
-                        setTcpForm({
-                          ...tcpForm,
-                          codecs: { ...tcpForm.codecs, lcevc: event.target.checked },
-                        })
+                        setTcpForm({ ...tcpForm, encoderId: Number(event.target.value) })
                       }
                     />
-                    LCEVC
                   </label>
+                  <div className="form-field">
+                    <span className="form-label">Client Codecs</span>
+                    <div className="form-toggle-row">
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.h265}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, h265: event.target.checked },
+                            })
+                          }
+                        />
+                        H.265
+                      </label>
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.av1}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, av1: event.target.checked },
+                            })
+                          }
+                        />
+                        AV1
+                      </label>
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.h264}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, h264: event.target.checked },
+                            })
+                          }
+                        />
+                        H.264
+                      </label>
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.vp9}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, vp9: event.target.checked },
+                            })
+                          }
+                        />
+                        VP9
+                      </label>
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.evc}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, evc: event.target.checked },
+                            })
+                          }
+                        />
+                        EVC
+                      </label>
+                      <label className="form-toggle">
+                        <input
+                          type="checkbox"
+                          checked={tcpForm.codecs.lcevc}
+                          onChange={(event) =>
+                            setTcpForm({
+                              ...tcpForm,
+                              codecs: { ...tcpForm.codecs, lcevc: event.target.checked },
+                            })
+                          }
+                        />
+                        LCEVC
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              </div>
+                <div className="form-actions">
+                  <button className="secondary-button" type="button" onClick={handleTcpDisconnect}>
+                    Disconnect
+                  </button>
+                  <button className="primary-button" type="button" onClick={handleTcpConnect}>
+                    Connect + Configure
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={handleTcpDisconnect}>
-                Disconnect
-              </button>
-              <button className="primary-button" type="button" onClick={handleTcpConnect}>
-                Connect + Configure
-              </button>
-            </div>
-          </form>
+          </details>
           {codecSelection && (
             <div className="form-note">
               Negotiated codec: {codecSelection.codecName} (host {codecSelection.hostMask}, client {codecSelection.clientMask})
@@ -954,7 +835,6 @@ export default function HomePage() {
           )}
           <div className="divider" />
           <div className="connect-actions">
-            <button className="secondary-button" type="button" onClick={handleAddVirtualDisplay}>Add Virtual Display</button>
             <div className="connect-actions-links">
               <button className="ghost-button" type="button" onClick={refreshDevices}>Refresh</button>
               <Link className="ghost-button" href="/diagnostics">View Logs</Link>
@@ -962,178 +842,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="card settings-card">
-          <div className="card-header">
-            <div className="card-title">Session Defaults</div>
-            <div className="card-subtitle">Applied to new sessions</div>
-          </div>
-          <div className="settings-grid">
-            <div className="setting">
-              <div className="setting-label">Codec</div>
-              <div className="setting-value">{status.settings.codec}</div>
-            </div>
-            <div className="setting">
-              <div className="setting-label">Quality</div>
-              <div className="setting-value">{status.settings.quality}%</div>
-            </div>
-            <div className="setting">
-              <div className="setting-label">Refresh</div>
-              <div className="setting-value">Auto ({status.settings.refreshCapHz} Hz)</div>
-            </div>
-            <div className="setting">
-              <div className="setting-label">Keyframe</div>
-              <div className="setting-value">{status.settings.keyframeInterval} frames</div>
-            </div>
-            <div className="setting">
-              <div className="setting-label">Input</div>
-              <div className="setting-value">{status.settings.inputMode}</div>
-            </div>
-          </div>
-          <div className="divider" />
-          <div className="card-header">
-            <div className="card-title">Remote Input</div>
-            <div className="card-subtitle">Control input capture from the device</div>
-          </div>
-          <div className="form-toggle-row">
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={inputControls.enableInput}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  const nextState = { ...inputControls, enableInput: next };
-                  setInputControls(nextState);
-                  handleInputToggle("master", next, nextState);
-                }}
-              />
-              Enable Input
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={inputControls.captureOnConnect}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  const nextState = { ...inputControls, captureOnConnect: next };
-                  setInputControls(nextState);
-                  handleInputToggle("auto-capture", next, nextState);
-                }}
-              />
-              Capture on Connect
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={inputControls.touch}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  const nextState = { ...inputControls, touch: next };
-                  setInputControls(nextState);
-                  handleInputToggle("touch", next, nextState);
-                }}
-              />
-              Touch
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={inputControls.pen}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  const nextState = { ...inputControls, pen: next };
-                  setInputControls(nextState);
-                  handleInputToggle("pen", next, nextState);
-                }}
-              />
-              Pen
-            </label>
-            <label className="form-toggle">
-              <input
-                type="checkbox"
-                checked={inputControls.keyboard}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  const nextState = { ...inputControls, keyboard: next };
-                  setInputControls(nextState);
-                  handleInputToggle("keyboard", next, nextState);
-                }}
-              />
-              Keyboard
-            </label>
-          </div>
-        </section>
-
-        <section className="card status-card">
-          <div className="card-header">
-            <div className="card-title">Display Targets</div>
-            <div className="card-subtitle">Assign sessions to a display output</div>
-          </div>
-          <div className="form-grid">
-            <label className="form-field">
-              <span className="form-label">Target Display</span>
-              <select
-                className="form-input"
-                value={displayTarget}
-                onChange={(event) => setDisplayTarget(event.target.value)}
-              >
-                <option value="auto">Auto (Primary)</option>
-                {displays.map((display) => (
-                  <option key={display.id} value={display.id}>
-                    {display.name || display.id} ({display.width}x{display.height}@{display.refreshHz}Hz)
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={handleDisplayTargetSave}>Apply</button>
-            </div>
-          </div>
-          <div className="divider" />
-          <div className="card-header">
-            <div className="card-title">Virtual Displays</div>
-            <div className="card-subtitle">Create or remove virtual outputs</div>
-          </div>
-          <div className="form-grid">
-            <label className="form-field">
-              <span className="form-label">Label</span>
-              <input
-                className="form-input"
-                value={virtualDisplayLabel}
-                onChange={(event) => setVirtualDisplayLabel(event.target.value)}
-              />
-            </label>
-            <div className="form-actions">
-              <button className="secondary-button" type="button" onClick={handleCreateVirtualDisplay}>Create</button>
-            </div>
-          </div>
-          <div className="device-list">
-            {virtualDisplays.length === 0 ? (
-              <div className="device-row muted">
-                <div>
-                  <div className="device-name">No virtual displays detected</div>
-                  <div className="device-meta">Install the driver and create a display.</div>
-                </div>
-              </div>
-            ) : (
-              virtualDisplays.map((display) => (
-                <div className="device-row" key={display.id}>
-                  <div>
-                    <div className="device-name">{display.name || display.id}</div>
-                    <div className="device-meta">
-                      {display.width} x {display.height} @ {display.refreshHz} Hz
-                      {display.active ? " • Active" : ""}
-                    </div>
-                  </div>
-                  <div className="device-actions">
-                    <button className="ghost-button" type="button" onClick={() => handleRemoveVirtualDisplay(display.id)}>
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
       </main>
 
       <footer className="footer">
