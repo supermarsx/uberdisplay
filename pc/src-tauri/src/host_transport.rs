@@ -149,6 +149,23 @@ fn parse_stream_buffer(buffer: &mut VecDeque<u8>) {
                         *guard = Some(frame.encoder_id);
                     }
                 }
+                ClientPacket::Touch(_)
+                | ClientPacket::Pen(_)
+                | ClientPacket::Keyboard(_) => {
+                    let state = crate::session_state::snapshot();
+                    if !state.input_permissions.enable_input {
+                        continue;
+                    }
+                    let allowed = match packet {
+                        ClientPacket::Touch(_) => state.input_permissions.touch,
+                        ClientPacket::Pen(_) => state.input_permissions.pen,
+                        ClientPacket::Keyboard(_) => state.input_permissions.keyboard,
+                        _ => true,
+                    };
+                    if !allowed {
+                        continue;
+                    }
+                }
                 _ => {}
             }
         }

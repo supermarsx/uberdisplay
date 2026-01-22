@@ -14,6 +14,12 @@ type AppStatus = {
     transport: string;
     status: string;
     lastSeen?: string | null;
+    inputPermissions?: {
+      enableInput: boolean;
+      touch: boolean;
+      pen: boolean;
+      keyboard: boolean;
+    };
   }>;
 };
 
@@ -28,6 +34,12 @@ type DeviceForm = {
   name: string;
   transport: string;
   status: string;
+  inputPermissions: {
+    enableInput: boolean;
+    touch: boolean;
+    pen: boolean;
+    keyboard: boolean;
+  };
 };
 
 const fallbackStatus: AppStatus = {
@@ -42,6 +54,12 @@ const initialForm: DeviceForm = {
   name: "",
   transport: "USB",
   status: "Paired",
+  inputPermissions: {
+    enableInput: true,
+    touch: true,
+    pen: true,
+    keyboard: true,
+  },
 };
 
 const createId = () => {
@@ -134,6 +152,12 @@ export default function HomePage() {
         transport: form.transport,
         status: form.status.trim() || "Paired",
         lastSeen: "Just now",
+        inputPermissions: {
+          enableInput: form.inputPermissions.enableInput,
+          touch: form.inputPermissions.touch,
+          pen: form.inputPermissions.pen,
+          keyboard: form.inputPermissions.keyboard,
+        },
       };
       const list = await invokeTauri<AppStatus["devices"]>("upsert_device", { device });
       setDevices(list ?? []);
@@ -152,6 +176,12 @@ export default function HomePage() {
       name: device.name,
       transport: device.transport,
       status: device.status,
+      inputPermissions: {
+        enableInput: device.inputPermissions?.enableInput ?? true,
+        touch: device.inputPermissions?.touch ?? true,
+        pen: device.inputPermissions?.pen ?? true,
+        keyboard: device.inputPermissions?.keyboard ?? true,
+      },
     });
     setEditingDeviceId(device.id);
     setPairingOpen(true);
@@ -175,6 +205,12 @@ export default function HomePage() {
         transport: form.transport,
         status: form.status.trim() || "Paired",
         lastSeen: "Just now",
+        inputPermissions: {
+          enableInput: form.inputPermissions.enableInput,
+          touch: form.inputPermissions.touch,
+          pen: form.inputPermissions.pen,
+          keyboard: form.inputPermissions.keyboard,
+        },
       };
       const list = await invokeTauri<AppStatus["devices"]>("upsert_device", { device });
       setDevices(list ?? []);
@@ -235,8 +271,20 @@ export default function HomePage() {
     }
   };
 
-  const handleInputToggle = async (label: string, enabled: boolean) => {
+  const handleInputToggle = async (
+    label: string,
+    enabled: boolean,
+    nextPermissions: typeof inputControls
+  ) => {
     try {
+      await invokeTauri("set_session_input_permissions", {
+        permissions: {
+          enableInput: nextPermissions.enableInput,
+          touch: nextPermissions.touch,
+          pen: nextPermissions.pen,
+          keyboard: nextPermissions.keyboard,
+        },
+      });
       await invokeTauri("record_action", {
         message: `Remote input ${label} ${enabled ? "enabled" : "disabled"}`,
       });
@@ -488,6 +536,75 @@ export default function HomePage() {
                     placeholder="Paired"
                   />
                 </label>
+                <div className="form-field">
+                  <span className="form-label">Input Permissions</span>
+                  <div className="form-toggle-row">
+                    <label className="form-toggle">
+                      <input
+                        type="checkbox"
+                        checked={form.inputPermissions.enableInput}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            inputPermissions: {
+                              ...form.inputPermissions,
+                              enableInput: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      Enable Input
+                    </label>
+                    <label className="form-toggle">
+                      <input
+                        type="checkbox"
+                        checked={form.inputPermissions.touch}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            inputPermissions: {
+                              ...form.inputPermissions,
+                              touch: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      Touch
+                    </label>
+                    <label className="form-toggle">
+                      <input
+                        type="checkbox"
+                        checked={form.inputPermissions.pen}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            inputPermissions: {
+                              ...form.inputPermissions,
+                              pen: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      Pen
+                    </label>
+                    <label className="form-toggle">
+                      <input
+                        type="checkbox"
+                        checked={form.inputPermissions.keyboard}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            inputPermissions: {
+                              ...form.inputPermissions,
+                              keyboard: event.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      Keyboard
+                    </label>
+                  </div>
+                </div>
               </div>
               {error && <div className="form-error">{error}</div>}
               <div className="form-actions">
@@ -736,8 +853,9 @@ export default function HomePage() {
                 checked={inputControls.enableInput}
                 onChange={(event) => {
                   const next = event.target.checked;
-                  setInputControls({ ...inputControls, enableInput: next });
-                  handleInputToggle("master", next);
+                  const nextState = { ...inputControls, enableInput: next };
+                  setInputControls(nextState);
+                  handleInputToggle("master", next, nextState);
                 }}
               />
               Enable Input
@@ -748,8 +866,9 @@ export default function HomePage() {
                 checked={inputControls.captureOnConnect}
                 onChange={(event) => {
                   const next = event.target.checked;
-                  setInputControls({ ...inputControls, captureOnConnect: next });
-                  handleInputToggle("auto-capture", next);
+                  const nextState = { ...inputControls, captureOnConnect: next };
+                  setInputControls(nextState);
+                  handleInputToggle("auto-capture", next, nextState);
                 }}
               />
               Capture on Connect
@@ -760,8 +879,9 @@ export default function HomePage() {
                 checked={inputControls.touch}
                 onChange={(event) => {
                   const next = event.target.checked;
-                  setInputControls({ ...inputControls, touch: next });
-                  handleInputToggle("touch", next);
+                  const nextState = { ...inputControls, touch: next };
+                  setInputControls(nextState);
+                  handleInputToggle("touch", next, nextState);
                 }}
               />
               Touch
@@ -772,8 +892,9 @@ export default function HomePage() {
                 checked={inputControls.pen}
                 onChange={(event) => {
                   const next = event.target.checked;
-                  setInputControls({ ...inputControls, pen: next });
-                  handleInputToggle("pen", next);
+                  const nextState = { ...inputControls, pen: next };
+                  setInputControls(nextState);
+                  handleInputToggle("pen", next, nextState);
                 }}
               />
               Pen
@@ -784,8 +905,9 @@ export default function HomePage() {
                 checked={inputControls.keyboard}
                 onChange={(event) => {
                   const next = event.target.checked;
-                  setInputControls({ ...inputControls, keyboard: next });
-                  handleInputToggle("keyboard", next);
+                  const nextState = { ...inputControls, keyboard: next };
+                  setInputControls(nextState);
+                  handleInputToggle("keyboard", next, nextState);
                 }}
               />
               Keyboard

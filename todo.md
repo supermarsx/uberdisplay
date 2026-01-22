@@ -262,8 +262,14 @@
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats
 
+## Media Foundation Baseline (Work Started)
+- [ ] Implement Media Foundation encoder init + output for H.264
+- [ ] Implement Media Foundation encoder init + output for H.265 (if available)
+- [ ] Map encoder settings (bitrate, fps, keyframe interval) from HostSettings
+- [ ] Replace dummy frame sender with encoded output
+
 ## Remote Input Controls (PC UI + Host)
-- [ ] Add input capture controls (enable/touch/pen/keyboard) to PC session settings
-- [ ] Add host-side input filter flags and apply to incoming packets
-- [ ] Add per-device input permissions and persistence
+- [x] Add input capture controls (enable/touch/pen/keyboard) to PC session settings
+- [x] Add host-side input filter flags and apply to incoming packets
+- [x] Add per-device input permissions and persistence
 - [ ] Add command packet to toggle input modes per session

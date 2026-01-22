@@ -41,6 +41,12 @@ pub fn update_active_device(device_id: Option<String>, permissions: crate::app_s
     }
 }
 
+pub fn update_input_permissions(permissions: crate::app_state::InputPermissions) {
+    if let Ok(mut state) = state_store().lock() {
+        state.input_permissions = permissions;
+    }
+}
+
 pub fn snapshot() -> SessionState {
     state_store()
         .lock()
@@ -48,5 +54,7 @@ pub fn snapshot() -> SessionState {
         .unwrap_or(SessionState {
             codec_id: None,
             encoder_backend: None,
+            active_device_id: None,
+            input_permissions: crate::app_state::InputPermissions::default(),
         })
 }

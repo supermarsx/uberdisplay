@@ -7,8 +7,10 @@ mod device_registry;
 mod driver_probe;
 mod host_log;
 mod host_transport;
+mod mf_encoder;
 mod session;
 mod session_state;
+mod stream_loop;
 mod transport_probe;
 mod settings_registry;
 mod protocol;
@@ -59,6 +61,7 @@ fn connect_device(app_handle: tauri::AppHandle, device_id: String) -> Result<Vec
         device.status = "Connected".to_string();
         device.last_seen = Some("Just now".to_string());
         let _ = host_log::append_log(&app_handle, format!("Connected to {}", device.name));
+        session_state::update_active_device(Some(device.id.clone()), device.input_permissions.clone());
     }
     device_registry::save_devices(&app_handle, &devices)?;
     Ok(devices)
@@ -126,6 +129,9 @@ fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let state = session_state::snapshot();
+    let codec_id = state.codec_id.ok_or_else(|| "No negotiated codec".to_string())?;
+    stream_loop::start_streaming(codec_id, 1)?;
     let _ = host_log::append_log(&app_handle, "Start session requested");
     Ok(())
 }
@@ -197,6 +203,8 @@ fn tcp_connect_and_configure(
         session_state::update_codec(codec_id);
     }
     host_transport::send_framed_packet(&result.configure_bytes)?;
+    let backend = encoder::select_backend(None);
+    session_state::update_backend(backend);
     Ok(result.selection)
 }
 
@@ -233,6 +241,37 @@ fn record_action(app_handle: tauri::AppHandle, message: String) -> Result<(), St
     Ok(())
 }
 
+#[tauri::command]
+fn set_device_input_permissions(
+    app_handle: tauri::AppHandle,
+    device_id: String,
+    permissions: app_state::InputPermissions,
+) -> Result<Vec<app_state::PairedDevice>, String> {
+    let mut devices = device_registry::load_devices(&app_handle);
+    if let Some(device) = devices.iter_mut().find(|item| item.id == device_id) {
+        device.input_permissions = permissions.clone();
+        let _ = host_log::append_log(&app_handle, format!("Updated input permissions for {}", device.name));
+        session_state::update_active_device(Some(device.id.clone()), permissions);
+    }
+    device_registry::save_devices(&app_handle, &devices)?;
+    Ok(devices)
+}
+
+#[tauri::command]
+fn set_session_input_permissions(
+    permissions: app_state::InputPermissions,
+) -> Result<(), String> {
+    session_state::update_input_permissions(permissions);
+    Ok(())
+}
+
+#[tauri::command]
+fn stop_session(app_handle: tauri::AppHandle) -> Result<(), String> {
+    stream_loop::stop_streaming();
+    let _ = host_log::append_log(&app_handle, "Stop session requested");
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -253,7 +292,10 @@ fn main() {
             tcp_poll_status,
             session_state_snapshot,
             add_virtual_display,
-            record_action
+            record_action,
+            set_device_input_permissions,
+            set_session_input_permissions,
+            stop_session
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
