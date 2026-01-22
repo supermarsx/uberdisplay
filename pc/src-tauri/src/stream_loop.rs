@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::codec::CodecId;
 use crate::host_transport;
@@ -29,15 +29,22 @@ pub fn start_streaming(
 
     thread::spawn(move || {
         let mut awaiting_ack = false;
+        let mut last_send = Instant::now();
+        let max_wait_ms = (1000 / fps.max(1)).saturating_mul(2).max(8) as u64;
         while running_flag().load(Ordering::SeqCst) {
             if awaiting_ack {
+                let mut ack_received = false;
                 if let Some(done) = host_transport::take_last_frame_done() {
                     if done == encoder_id {
-                        awaiting_ack = false;
+                        ack_received = true;
                     }
                 }
-                thread::sleep(Duration::from_millis(4));
-                continue;
+                if ack_received || last_send.elapsed().as_millis() as u64 >= max_wait_ms {
+                    awaiting_ack = false;
+                } else {
+                    thread::sleep(Duration::from_millis(4));
+                    continue;
+                }
             }
 
             let payload = encoder.encode_dummy_frame();
@@ -47,6 +54,7 @@ pub fn start_streaming(
             });
             let _ = host_transport::send_framed_packet(&packet);
             awaiting_ack = true;
+            last_send = Instant::now();
             let frame_delay = (1000 / fps.max(1)).max(4);
             thread::sleep(Duration::from_millis(frame_delay as u64));
         }

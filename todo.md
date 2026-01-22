@@ -267,7 +267,7 @@
 - [ ] Implement Media Foundation encoder init + output for H.265 (if available)
 - [ ] Map encoder settings (bitrate, fps, keyframe interval) from HostSettings
 - [ ] Replace dummy frame sender with encoded output
- - [ ] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks
+ - [x] Feed frame pacing from FrameDone ack + fallback to fps timer when no acks
 
 ## Remote Input Controls (PC UI + Host)
 - [x] Add input capture controls (enable/touch/pen/keyboard) to PC session settings
