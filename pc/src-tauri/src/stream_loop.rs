@@ -14,12 +14,18 @@ fn running_flag() -> &'static AtomicBool {
     STREAM_RUNNING.get_or_init(|| AtomicBool::new(false))
 }
 
-pub fn start_streaming(codec_id: CodecId, encoder_id: i32) -> Result<(), String> {
+pub fn start_streaming(
+    codec_id: CodecId,
+    encoder_id: i32,
+    bitrate_kbps: u32,
+    fps: u32,
+    keyframe_interval: u32,
+) -> Result<(), String> {
     if running_flag().swap(true, Ordering::SeqCst) {
         return Ok(());
     }
 
-    let encoder = MfEncoder::new(codec_id, 0, 0)?;
+    let encoder = MfEncoder::new(codec_id, 0, 0, bitrate_kbps, fps, keyframe_interval)?;
 
     thread::spawn(move || {
         let mut awaiting_ack = false;
@@ -41,7 +47,8 @@ pub fn start_streaming(codec_id: CodecId, encoder_id: i32) -> Result<(), String>
             });
             let _ = host_transport::send_framed_packet(&packet);
             awaiting_ack = true;
-            thread::sleep(Duration::from_millis(16));
+            let frame_delay = (1000 / fps.max(1)).max(4);
+            thread::sleep(Duration::from_millis(frame_delay as u64));
         }
     });
 

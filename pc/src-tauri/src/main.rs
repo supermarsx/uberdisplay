@@ -131,7 +131,11 @@ fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     let state = session_state::snapshot();
     let codec_id = state.codec_id.ok_or_else(|| "No negotiated codec".to_string())?;
-    stream_loop::start_streaming(codec_id, 1)?;
+    let settings = settings_registry::load_settings(&app_handle);
+    let fps = settings.refresh_cap_hz.max(1) as u32;
+    let bitrate_kbps = (settings.quality as u32 * 80).max(500);
+    let keyframe_interval = 60;
+    stream_loop::start_streaming(codec_id, 1, bitrate_kbps, fps, keyframe_interval)?;
     let _ = host_log::append_log(&app_handle, "Start session requested");
     Ok(())
 }
