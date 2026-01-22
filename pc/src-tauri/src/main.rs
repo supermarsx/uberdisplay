@@ -6,6 +6,7 @@ mod codec;
 mod capture;
 mod display_probe;
 mod driver_ipc;
+mod linux_vdd;
 mod encoder;
 mod device_registry;
 mod driver_probe;
@@ -147,32 +148,62 @@ fn list_display_modes(app_handle: tauri::AppHandle, display_id: String) -> Vec<a
 
 #[tauri::command]
 fn create_virtual_display(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
-    let virtual_count = display_probe::list_displays()
-        .into_iter()
-        .filter(|display| display.is_virtual)
-        .count() as u32;
-    let next_count = virtual_count.saturating_add(1);
-    driver_ipc::set_display_count(next_count).map_err(|err| {
-        let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
-        err
-    })?;
-    let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays ({label})"));
-    Ok(())
+    #[cfg(windows)]
+    {
+        let virtual_count = display_probe::list_displays()
+            .into_iter()
+            .filter(|display| display.is_virtual)
+            .count() as u32;
+        let next_count = virtual_count.saturating_add(1);
+        driver_ipc::set_display_count(next_count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays ({label})"));
+        return Ok(());
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let next_count = linux_vdd::current_count().saturating_add(1);
+        linux_vdd::ensure_display_count(next_count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Linux VDD start failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays ({label})"));
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err("Virtual display management not supported on this platform.".to_string())
 }
 
 #[tauri::command]
 fn remove_virtual_display(app_handle: tauri::AppHandle, display_id: String) -> Result<(), String> {
-    let virtual_count = display_probe::list_displays()
-        .into_iter()
-        .filter(|display| display.is_virtual)
-        .count() as u32;
-    let next_count = virtual_count.saturating_sub(1);
-    driver_ipc::set_display_count(next_count).map_err(|err| {
-        let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
-        err
-    })?;
-    let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays (remove {display_id})"));
-    Ok(())
+    #[cfg(windows)]
+    {
+        let virtual_count = display_probe::list_displays()
+            .into_iter()
+            .filter(|display| display.is_virtual)
+            .count() as u32;
+        let next_count = virtual_count.saturating_sub(1);
+        driver_ipc::set_display_count(next_count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Driver IPC set display count failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays (remove {display_id})"));
+        return Ok(());
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let next_count = linux_vdd::current_count().saturating_sub(1);
+        linux_vdd::ensure_display_count(next_count).map_err(|err| {
+            let _ = host_log::append_log(&app_handle, format!("Linux VDD stop failed: {err}"));
+            err
+        })?;
+        let _ = host_log::append_log(&app_handle, format!("Requested {next_count} virtual displays (remove {display_id})"));
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err("Virtual display management not supported on this platform.".to_string())
 }
 
 #[tauri::command]

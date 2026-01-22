@@ -282,8 +282,12 @@
 - [x] Switch driver IPC to MTTVirtualDisplayPipe commands (SETDISPLAYCOUNT, HDR/EDID toggles, GPU select)
 - [ ] Add virtual display count control in UI (multi-screen support)
 - [ ] Add driver management (install/enable/disable/status) via virtual-driver-manager.ps1 JSON output
-- [ ] Add Linux virtual display backend (Xvfb-based) for headless sessions
-- [ ] Research macOS virtual display options and feasible control surface
+- [x] Add Linux virtual display backend (Xvfb-based) for headless sessions
+- [ ] Add Linux Xvfb configuration controls (display base, resolution, depth)
+- [ ] Add Linux virtual display persistence + cleanup on app exit
+- [ ] Add Linux display inventory integration (track Xvfb instances as virtual outputs)
+- [ ] Research macOS virtual display options (dummy display, AVDisplay, ScreenCaptureKit capture targets)
+- [ ] Determine macOS control surface (install steps, CLI/API, entitlements) and wire into UI
 - [x] Implement frame pacing loop with backpressure using FrameDone ack
 - [ ] Add stats sampling (encode time, send time, queue depth, RTT proxy)
 - [ ] Add session logs + export hooks for pipeline stats
