@@ -449,8 +449,9 @@ Configuration requirements (both Android + PC):
 #### Video codecs (best-effort priority order)
 The PC app should select the best available codec based on hardware support (PC encoder + Android decoder), then fall back:
 - **HEVC (H.265)**: best quality/bitrate on many modern GPUs + Android devices.
-- **AVC (H.264)**: widest compatibility; good low-latency baseline.
 - **AV1**: excellent compression when both sides have hardware support; otherwise avoid for latency/CPU reasons.
+- **AVC (H.264)**: widest compatibility; good low-latency baseline.
+- **VP9**: last-resort fallback where H.264 is constrained or unavailable.
 
 Low-latency encoder settings (guidelines):
 - Disable B-frames (or use “low-delay” GOP structure).
@@ -718,6 +719,7 @@ The client recognizes these `data_type` IDs:
 | `Error` | 14 | Host -> Client | Host-reported error/warning. |
 | `Keyboard` | 15 | Client -> Host | Keyboard key down/up events. |
 | `Command` | 16 | Client -> Host | Host-defined "command" invocations. |
+| `Capabilities` | 17 | Both | Codec + feature capability negotiation (vNext). |
 
 ### 7.5 Payload formats (as implemented by the client)
 
@@ -730,6 +732,18 @@ Payload is parsed into:
 - `hWidth` (`i32`) — host surface width (for pointer transforms)
 - `hHeight` (`i32`) — host surface height
 - `encoderId` (`i32`) — identifier echoed back in `FrameDone`
+- **Optional v2 extension** (if payload length allows):
+  - `codecId` (`u8`)
+  - `codecProfile` (`u8`)
+  - `codecLevel` (`u8`)
+  - `codecFlags` (`u8`) — reserved (0 for now)
+
+Codec IDs (host-selected):
+- `1` = H.264
+- `2` = H.265 / HEVC
+- `3` = AV1
+- `4` = VP9
+- `5` = H.266 (reserved; negotiate only if both sides advertise support)
 
 Notes:
 - If `width == 0`, the client may tear down video output and show a “no video” hint.
@@ -738,7 +752,7 @@ Notes:
 #### `Frame` (Host -> Client)
 Client behavior:
 - Skips **one additional byte** after `data_type` (an extra per-frame header byte).
-- The remainder is passed to the decoder as H.264 stream bytes.
+- The remainder is passed to the decoder as codec stream bytes indicated by `codecId` from `Configure` (H.264 fallback if absent).
 
 Payload layout (inferred from reads):
 - `frame_meta` (`u8`) — currently unused on client, host-defined.
@@ -830,6 +844,21 @@ Sent by the action menu to represent a key/action press originating from a speci
 
 #### `Command` (Client -> Host)
 - `commandId` (`i32`) — host-defined command index.
+
+#### `Capabilities` (Both)
+Payload (Little Endian):
+- `codecMask` (`u32`) — bitmask of supported codecs.
+  - bit 0: H.264
+  - bit 1: H.265 / HEVC
+  - bit 2: AV1
+  - bit 3: VP9
+  - bit 4: H.266 (reserved; advertise only if supported)
+- `flags` (`u32`) — feature flags (vNext, currently 0).
+- Optional fields may be appended in future versions.
+
+Negotiation rule (Windows-first):
+- Host selects codec in priority order: **H.265 HEVC → AV1 → H.264 → VP9** based on the intersection of host + client `codecMask`.
+- Host sends selected `codecId` in `Configure` v2 extension.
 
 #### `Unlock` (Reserved)
 UberDisplay does not implement the `Unlock` flow.

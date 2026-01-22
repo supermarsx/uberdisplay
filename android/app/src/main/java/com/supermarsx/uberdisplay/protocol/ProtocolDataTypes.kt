@@ -18,4 +18,5 @@ object ProtocolDataTypes {
     const val ERROR = 14
     const val KEYBOARD = 15
     const val COMMAND = 16
+    const val CAPABILITIES = 17
 }

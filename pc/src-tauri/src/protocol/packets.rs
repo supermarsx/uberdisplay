@@ -17,6 +17,10 @@ pub struct ConfigurePacket {
     pub host_width: i32,
     pub host_height: i32,
     pub encoder_id: i32,
+    pub codec_id: Option<u8>,
+    pub codec_profile: u8,
+    pub codec_level: u8,
+    pub codec_flags: u8,
 }
 
 #[derive(Debug, PartialEq)]
@@ -63,11 +67,18 @@ pub struct InputKeyPacket {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct CapabilitiesPacket {
+    pub codec_mask: u32,
+    pub flags: u32,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ClientPacket {
     Touch(TouchPacket),
     Pen(PenPacket),
     Keyboard(KeyboardPacket),
     InputKey(InputKeyPacket),
+    Capabilities(CapabilitiesPacket),
 }
 
 pub fn build_state_packet(payload: &[u8]) -> Vec<u8> {
@@ -78,13 +89,19 @@ pub fn build_state_packet(payload: &[u8]) -> Vec<u8> {
 }
 
 pub fn build_configure_packet(packet: ConfigurePacket) -> Vec<u8> {
-    let mut buffer = Vec::with_capacity(1 + 5 * 4);
+    let mut buffer = Vec::with_capacity(1 + 5 * 4 + 4);
     buffer.push(1);
     buffer.extend_from_slice(&packet.width.to_le_bytes());
     buffer.extend_from_slice(&packet.height.to_le_bytes());
     buffer.extend_from_slice(&packet.host_width.to_le_bytes());
     buffer.extend_from_slice(&packet.host_height.to_le_bytes());
     buffer.extend_from_slice(&packet.encoder_id.to_le_bytes());
+    if let Some(codec_id) = packet.codec_id {
+        buffer.push(codec_id);
+        buffer.push(packet.codec_profile);
+        buffer.push(packet.codec_level);
+        buffer.push(packet.codec_flags);
+    }
     buffer
 }
 
@@ -96,6 +113,14 @@ pub fn build_frame_packet(packet: FramePacket<'_>) -> Vec<u8> {
     buffer
 }
 
+pub fn build_capabilities_packet(packet: CapabilitiesPacket) -> Vec<u8> {
+    let mut buffer = Vec::with_capacity(1 + 8);
+    buffer.push(17);
+    buffer.extend_from_slice(&packet.codec_mask.to_le_bytes());
+    buffer.extend_from_slice(&packet.flags.to_le_bytes());
+    buffer
+}
+
 pub fn parse_client_packet(bytes: &[u8]) -> Result<ClientPacket, PacketError> {
     let (data_type, payload) = bytes.split_first().ok_or(PacketError::PayloadTooShort)?;
 
@@ -104,6 +129,7 @@ pub fn parse_client_packet(bytes: &[u8]) -> Result<ClientPacket, PacketError> {
         9 => parse_pen_packet(payload).map(ClientPacket::Pen),
         13 => parse_input_key_packet(payload).map(ClientPacket::InputKey),
         15 => parse_keyboard_packet(payload).map(ClientPacket::Keyboard),
+        17 => parse_capabilities_packet(payload).map(ClientPacket::Capabilities),
         other => Err(PacketError::UnsupportedDataType(*other)),
     }
 }
@@ -167,6 +193,17 @@ fn parse_input_key_packet(payload: &[u8]) -> Result<InputKeyPacket, PacketError>
     })
 }
 
+fn parse_capabilities_packet(payload: &[u8]) -> Result<CapabilitiesPacket, PacketError> {
+    if payload.len() != 8 {
+        return Err(PacketError::PayloadTooShort);
+    }
+
+    Ok(CapabilitiesPacket {
+        codec_mask: u32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]]),
+        flags: u32::from_le_bytes([payload[4], payload[5], payload[6], payload[7]]),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,6 +216,10 @@ mod tests {
             host_width: 2560,
             host_height: 1440,
             encoder_id: 7,
+            codec_id: None,
+            codec_profile: 0,
+            codec_level: 0,
+            codec_flags: 0,
         });
 
         assert_eq!(packet[0], 1);
@@ -187,6 +228,25 @@ mod tests {
         assert_eq!(i32::from_le_bytes(packet[9..13].try_into().unwrap()), 2560);
         assert_eq!(i32::from_le_bytes(packet[13..17].try_into().unwrap()), 1440);
         assert_eq!(i32::from_le_bytes(packet[17..21].try_into().unwrap()), 7);
+    }
+
+    #[test]
+    fn builds_configure_packet_with_codec_extension() {
+        let packet = build_configure_packet(ConfigurePacket {
+            width: 1280,
+            height: 720,
+            host_width: 1280,
+            host_height: 720,
+            encoder_id: 3,
+            codec_id: Some(2),
+            codec_profile: 1,
+            codec_level: 2,
+            codec_flags: 0,
+        });
+
+        assert_eq!(packet[0], 1);
+        assert_eq!(*packet.last().unwrap(), 0);
+        assert_eq!(packet[21], 2);
     }
 
     #[test]
@@ -251,6 +311,20 @@ mod tests {
                 down: true,
                 button_index: 2,
                 action: 9,
+            })
+        );
+    }
+
+    #[test]
+    fn parses_capabilities_packet() {
+        let payload = [1u8, 0, 0, 0, 2, 0, 0, 0];
+        let packet = parse_client_packet(&[17u8].iter().chain(payload.iter()).copied().collect::<Vec<_>>()).unwrap();
+
+        assert_eq!(
+            packet,
+            ClientPacket::Capabilities(CapabilitiesPacket {
+                codec_mask: 1,
+                flags: 2,
             })
         );
     }

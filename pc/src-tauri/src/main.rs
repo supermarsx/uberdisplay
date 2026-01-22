@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app_state;
+mod codec;
+mod encoder;
 mod device_registry;
 mod driver_probe;
 mod host_log;
+mod session;
 mod transport_probe;
 mod settings_registry;
 mod protocol;
@@ -64,6 +67,12 @@ fn update_settings(
     app_handle: tauri::AppHandle,
     settings: app_state::HostSettings,
 ) -> Result<app_state::HostSettings, String> {
+    let codec_id =
+        codec::codec_id_from_name(&settings.codec).ok_or_else(|| "Unsupported codec".to_string())?;
+    let host_mask = codec::host_codec_mask();
+    if codec::codec_mask(codec_id) & host_mask == 0 {
+        return Err("Codec not available on this host".to_string());
+    }
     settings_registry::save_settings(&app_handle, &settings)?;
     let _ = host_log::append_log(&app_handle, "Updated host settings");
     Ok(settings)
@@ -75,6 +84,30 @@ fn reset_settings(app_handle: tauri::AppHandle) -> Result<app_state::HostSetting
     settings_registry::save_settings(&app_handle, &settings)?;
     let _ = host_log::append_log(&app_handle, "Reset host settings to defaults");
     Ok(settings)
+}
+
+#[tauri::command]
+fn negotiate_codec(
+    app_handle: tauri::AppHandle,
+    client_mask: u32,
+) -> Result<app_state::CodecSelection, String> {
+    let settings = settings_registry::load_settings(&app_handle);
+    let preferred = codec::codec_id_from_name(&settings.codec);
+    let host_mask = codec::host_codec_mask();
+    let selected = codec::select_codec(host_mask, client_mask, preferred)
+        .ok_or_else(|| "No compatible codec found".to_string())?;
+
+    let selection = app_state::CodecSelection {
+        codec_id: selected as u8,
+        codec_name: codec::codec_name(selected).to_string(),
+        host_mask,
+        client_mask,
+    };
+    let _ = host_log::append_log(
+        &app_handle,
+        format!("Negotiated codec {}", selection.codec_name),
+    );
+    Ok(selection)
 }
 
 #[tauri::command]
@@ -93,6 +126,34 @@ fn export_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
 fn start_session(app_handle: tauri::AppHandle) -> Result<(), String> {
     let _ = host_log::append_log(&app_handle, "Start session requested");
     Ok(())
+}
+
+#[tauri::command]
+fn prepare_session(
+    app_handle: tauri::AppHandle,
+    width: i32,
+    height: i32,
+    host_width: i32,
+    host_height: i32,
+    encoder_id: i32,
+    client_codec_mask: u32,
+) -> Result<(app_state::CodecSelection, Vec<u8>), String> {
+    let settings = settings_registry::load_settings(&app_handle);
+    let preferred = codec::codec_id_from_name(&settings.codec);
+    let result = session::prepare_session(session::SessionConfig {
+        width,
+        height,
+        host_width,
+        host_height,
+        encoder_id,
+        client_codec_mask,
+        preferred_codec: preferred,
+    })?;
+    let _ = host_log::append_log(
+        &app_handle,
+        format!("Prepared session codec {}", result.selection.codec_name),
+    );
+    Ok((result.selection, result.configure_bytes))
 }
 
 #[tauri::command]
@@ -117,9 +178,11 @@ fn main() {
             connect_device,
             update_settings,
             reset_settings,
+            negotiate_codec,
             list_logs,
             export_logs,
             start_session,
+            prepare_session,
             add_virtual_display,
             record_action
         ])

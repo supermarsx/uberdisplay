@@ -2,6 +2,9 @@ package com.supermarsx.uberdisplay.transport
 
 import java.net.ServerSocket
 import java.net.Socket
+import com.supermarsx.uberdisplay.media.CodecCapabilities
+import com.supermarsx.uberdisplay.protocol.FramedPacketWriter
+import com.supermarsx.uberdisplay.protocol.Packet
 
 class TcpListenerStub(
     private val port: Int = TcpTransportStub.DEFAULT_PORT
@@ -57,10 +60,20 @@ class TcpListenerStub(
             socket.soTimeout = 5000
             val senderLoop = TcpSenderLoop(TransportOutbox.tcpQueue)
             senderLoop.start(socket.getOutputStream())
+            sendCapabilities()
             TcpPacketLoop().run(socket.getInputStream())
             senderLoop.stop()
             socket.close()
         } catch (_: Exception) {
+        }
+    }
+
+    private fun sendCapabilities() {
+        val codecMask = CodecCapabilities.getCodecMask()
+        val packet = Packet.Capabilities(codecMask = codecMask, flags = 0)
+        val framed = FramedPacketWriter().write(packet)
+        if (framed.isNotEmpty()) {
+            TransportOutbox.tcpQueue.enqueue(framed)
         }
     }
 }

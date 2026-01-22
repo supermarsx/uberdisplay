@@ -55,6 +55,15 @@ pub struct AppStatus {
     pub devices: Vec<PairedDevice>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodecSelection {
+    pub codec_id: u8,
+    pub codec_name: String,
+    pub host_mask: u32,
+    pub client_mask: u32,
+}
+
 impl Default for AppStatus {
     fn default() -> Self {
         Self {

@@ -13,6 +13,7 @@ class SimplePacketWriter : PacketWriter {
             is Packet.FrameDone -> writeFrameDone(packet)
             is Packet.InputKey -> writeInputKey(packet)
             is Packet.InputConfig -> writeInputConfig(packet)
+            is Packet.Capabilities -> writeCapabilities(packet)
             else -> ByteArray(0)
         }
     }
@@ -79,6 +80,14 @@ class SimplePacketWriter : PacketWriter {
         val buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
         buffer.put(ProtocolDataTypes.INPUT_CONFIG.toByte())
         buffer.putInt(packet.buttonFunction)
+        return buffer.array()
+    }
+
+    private fun writeCapabilities(packet: Packet.Capabilities): ByteArray {
+        val buffer = ByteBuffer.allocate(9).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.put(ProtocolDataTypes.CAPABILITIES.toByte())
+        buffer.putInt(packet.codecMask)
+        buffer.putInt(packet.flags)
         return buffer.array()
     }
 

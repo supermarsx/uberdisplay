@@ -2,7 +2,17 @@ package com.supermarsx.uberdisplay.protocol
 
 sealed class Packet {
     data class State(val code: Int) : Packet()
-    data class Configure(val width: Int, val height: Int, val encoderId: Int) : Packet()
+    data class Configure(
+        val width: Int,
+        val height: Int,
+        val hostWidth: Int,
+        val hostHeight: Int,
+        val encoderId: Int,
+        val codecId: Int? = null,
+        val codecProfile: Int = 0,
+        val codecLevel: Int = 0,
+        val codecFlags: Int = 0
+    ) : Packet()
     data class Frame(val data: ByteArray) : Packet()
     data class FrameDone(val encoderId: Int) : Packet()
     data class TouchPoint(
@@ -26,4 +36,5 @@ sealed class Packet {
     data class InputKey(val down: Boolean, val buttonIndex: Int, val actionId: Int) : Packet()
     data class InputConfig(val buttonFunction: Int) : Packet()
     data class Error(val code: Int) : Packet()
+    data class Capabilities(val codecMask: Int, val flags: Int) : Packet()
 }

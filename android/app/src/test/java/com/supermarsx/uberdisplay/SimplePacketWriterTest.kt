@@ -76,4 +76,11 @@ class SimplePacketWriterTest {
         assertEquals(5, bytes.size)
         assertEquals(ProtocolDataTypes.INPUT_CONFIG.toByte(), bytes[0])
     }
+
+    @Test
+    fun writesCapabilitiesPacket() {
+        val bytes = SimplePacketWriter().write(Packet.Capabilities(codecMask = 3, flags = 1))
+        assertEquals(9, bytes.size)
+        assertEquals(ProtocolDataTypes.CAPABILITIES.toByte(), bytes[0])
+    }
 }
