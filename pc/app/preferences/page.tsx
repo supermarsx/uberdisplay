@@ -685,6 +685,9 @@ export default function PreferencesPage() {
                 <div className="metric-value">{driverPing ? "Online" : "Offline"}</div>
               </div>
             </div>
+            {driverPing === false && (
+              <div className="form-note">Service not running. Install and start the VDD service.</div>
+            )}
             <div className="form-actions align-left">
               <button className="secondary-button" type="button" onClick={() => handleDriverAction("install")}>Install</button>
               <button className="secondary-button" type="button" onClick={() => handleDriverAction("enable")}>Enable</button>
