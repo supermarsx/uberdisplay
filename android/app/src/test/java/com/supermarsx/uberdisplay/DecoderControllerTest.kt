@@ -37,6 +37,11 @@ class DecoderControllerTest {
     }
 
     @Test
+    fun codecIdToMimeReturnsVvcForH266() {
+        assertEquals("video/vvc", DecoderController.codecIdToMime(CodecConstants.CODEC_ID_H266))
+    }
+
+    @Test
     fun codecIdToMimeDefaultsToAvc() {
         assertEquals("video/avc", DecoderController.codecIdToMime(999))
     }

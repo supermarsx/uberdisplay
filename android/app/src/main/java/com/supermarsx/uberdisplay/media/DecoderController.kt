@@ -105,8 +105,9 @@ class DecoderController {
             if (inputIndex >= 0) {
                 val inputBuffer = codec.getInputBuffer(inputIndex) ?: return
                 inputBuffer.clear()
-                inputBuffer.put(data, 0, data.size.coerceAtMost(inputBuffer.capacity()))
-                codec.queueInputBuffer(inputIndex, 0, data.size.coerceAtMost(inputBuffer.capacity()), presentationTimeUs, 0)
+                val copyLen = data.size.coerceAtMost(inputBuffer.capacity())
+                inputBuffer.put(data, 0, copyLen)
+                codec.queueInputBuffer(inputIndex, 0, copyLen, presentationTimeUs, 0)
                 presentationTimeUs += FRAME_DURATION_US
             }
             drainOutput(codec)
@@ -163,7 +164,7 @@ class DecoderController {
                 CodecConstants.CODEC_ID_VP9 -> "video/x-vnd.on2.vp9"
                 CodecConstants.CODEC_ID_EVC -> "video/evc"
                 CodecConstants.CODEC_ID_LCEVC -> "video/lcevc"
-                CodecConstants.CODEC_ID_H266 -> "video/avc"
+                CodecConstants.CODEC_ID_H266 -> "video/vvc"
                 else -> "video/avc"
             }
         }

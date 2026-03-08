@@ -64,12 +64,12 @@ fn detect_mf_encoder_available() -> bool {
     use windows::Win32::Media::MediaFoundation::{
         MFTEnumEx, MFT_CATEGORY_VIDEO_ENCODER, MFT_ENUM_FLAG_LOCALMFT,
         MFT_ENUM_FLAG_SYNCMFT, MFT_REGISTER_TYPE_INFO, MFVideoFormat_H264,
-        MFVideoFormat_NV12,
+        MFMediaType_Video,
     };
     use windows::Win32::System::Com::CoTaskMemFree;
 
     let output_type = MFT_REGISTER_TYPE_INFO {
-        guidMajorType: MFVideoFormat_NV12,
+        guidMajorType: MFMediaType_Video,
         guidSubtype: MFVideoFormat_H264,
     };
     let flags = MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_LOCALMFT;
@@ -209,9 +209,8 @@ mod tests {
     #[test]
     fn select_backend_falls_through_when_preferred_unavailable() {
         let result = select_backend(None);
-        assert_ne!(result, EncoderBackend::Nvenc); // may or may not be available
         let backends = detect_backends();
-        assert!(backends.contains(&result));
+        assert!(backends.contains(&result), "selected backend must be in detected list");
     }
 
     #[test]
