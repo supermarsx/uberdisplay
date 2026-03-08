@@ -229,19 +229,19 @@
 ## Codec + Streaming Pipeline
 - [x] Define codec capability model + negotiation payload (HEVC/AV1/H.264/VP9) and extend Configure packet
 - [x] Add protocol versioning/migration for codec negotiation in `spec.md`
-- [ ] Implement host encoder abstraction with codec priority: H.265 HEVC -> AV1 -> H.264 -> VP9
-- [ ] Wire GPU encoder backends where available (NVENC/AMF/QSV) with Media Foundation fallback on Windows
+- [x] Implement host encoder abstraction with codec priority: H.265 HEVC -> AV1 -> H.264 -> VP9
+- [x] Wire GPU encoder backends where available (NVENC/AMF/QSV) with Media Foundation fallback on Windows
 - [ ] Implement cross-platform capture + encode pipeline (Windows first, feature-gated for macOS/Linux)
 - [x] Add transport stream sender for encoded frames + FrameDone handling
-- [ ] Implement Android decoder selection via MediaCodec with SurfaceView/TextureView fallback
-- [ ] Add Android codec capability discovery + reporting to host
+- [x] Implement Android decoder selection via MediaCodec with SurfaceView/TextureView fallback
+- [x] Add Android codec capability discovery + reporting to host
 - [ ] Add end-to-end session start/stop pipeline (host capture/encode -> transport -> Android decode/render)
 
 ## PC Host Implementation (Windows-first)
 - [x] Add host TCP reader loop for Android `Capabilities` + `FrameDone`
 - [x] Persist negotiated codec + encoder backend in session state
 - [ ] Implement Media Foundation encoder path for H.264/H.265 (baseline)
-- [ ] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
+- [x] Add GPU SDK probes for NVENC/AMF/QSV and map to encoder backend selection
 - [x] Wire capture source (DXGI Desktop Duplication) to encoder pipeline
 - [x] Add GDI screen capture fallback to feed NV12 frames
 - [x] Emit `Configure` v2 and `Frame` packets over TCP session
@@ -253,7 +253,7 @@
 - [ ] Add encoder backend evaluation for EVC (xeve) and MPEG-5 LCEVC
 - [ ] Define codec profile/level mapping for EVC/LCEVC in Configure v2
 - [ ] Add host-side software fallback stubs for EVC/LCEVC (no-op until real encoder wired)
-- [ ] Update Android decoder capability probing for EVC/LCEVC if MediaCodec exposes support
+- [x] Update Android decoder capability probing for EVC/LCEVC if MediaCodec exposes support
 
 ## PC Pipeline Buildout (Detailed)
 - [ ] Build host TCP session manager (connect, handshake, negotiate, configure, send loop)
